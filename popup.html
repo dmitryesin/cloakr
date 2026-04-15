@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SOCKS5 Proxy Manager</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="app">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+        </div>
+        <span class="header-title">SOCKS5 Proxy</span>
+        <div id="statusBadge" class="status-badge status-off">OFF</div>
+      </header>
+
+      <!-- Status bar -->
+      <div id="statusBar" class="status-bar status-bar--inactive">
+        <div class="status-dot"></div>
+        <span id="statusText">Not connected</span>
+      </div>
+
+      <!-- Form -->
+      <div class="form">
+        <div class="form-row">
+          <div class="form-group form-group--host">
+            <label class="label" for="host">Host / IP</label>
+            <input
+              type="text"
+              id="host"
+              class="input"
+              placeholder="127.0.0.1"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+          <div class="form-group form-group--port">
+            <label class="label" for="port">Port</label>
+            <input
+              type="number"
+              id="port"
+              class="input"
+              placeholder="1080"
+              min="1"
+              max="65535"
+            />
+          </div>
+        </div>
+
+        <div class="divider">
+          <span>Authentication <span class="optional">(optional)</span></span>
+        </div>
+
+        <div class="form-group">
+          <label class="label" for="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            class="input"
+            placeholder="Leave empty if not required"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="label" for="password">Password</label>
+          <div class="password-wrapper">
+            <input
+              type="password"
+              id="password"
+              class="input"
+              placeholder="Leave empty if not required"
+              autocomplete="off"
+            />
+            <button id="togglePassword" class="toggle-password" type="button" title="Show/hide password">
+              <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Saved proxies -->
+      <div id="savedSection" class="saved-section" style="display:none">
+        <div class="saved-header">
+          <span>Saved proxies</span>
+        </div>
+        <div id="savedList" class="saved-list"></div>
+      </div>
+
+      <!-- Actions -->
+      <div class="actions">
+        <button id="saveBtn" class="btn btn--secondary" title="Save current settings">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+          Save
+        </button>
+
+        <button id="connectBtn" class="btn btn--primary">
+          Connect
+        </button>
+
+        <button id="disconnectBtn" class="btn btn--danger" style="display:none">
+          Disconnect
+        </button>
+      </div>
+
+      <!-- Error message -->
+      <div id="errorMsg" class="error-msg" style="display:none"></div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
