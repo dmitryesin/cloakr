@@ -14,14 +14,17 @@ const errorMsg = document.getElementById("errorMsg");
 const togglePassword = document.getElementById("togglePassword");
 const savedSection = document.getElementById("savedSection");
 const savedList = document.getElementById("savedList");
+const latencyCheckEnabledInput = document.getElementById("latencyCheckEnabled");
 
 const MAX_SAVED_PROXIES = 30;
 let latencyRequestId = 0;
 let isConnectedState = false;
+let isLatencyCheckEnabled = true;
 
 // Initialization.
 
 document.addEventListener("DOMContentLoaded", async () => {
+  await loadLatencyPreference();
   void loadSavedProxies();
   void refreshStatus();
   void loadLastConfig();
@@ -34,7 +37,9 @@ async function refreshStatus() {
 
   if (enabled && config) {
     setConnectedUI(config.scheme, config.host, config.port);
-    void refreshLatency(config.scheme, config.host, config.port);
+    if (isLatencyCheckEnabled) {
+      void refreshLatency(config.scheme, config.host, config.port);
+    }
   } else {
     setDisconnectedUI();
   }
@@ -273,6 +278,16 @@ togglePassword.addEventListener("click", () => {
        <circle cx="12" cy="12" r="3"/>`;
 });
 
+latencyCheckEnabledInput.addEventListener("change", async () => {
+  isLatencyCheckEnabled = latencyCheckEnabledInput.checked;
+  if (!isLatencyCheckEnabled) {
+    latencyRequestId += 1;
+  }
+
+  await storageSet({ latencyCheckEnabled: isLatencyCheckEnabled });
+  await refreshStatus();
+});
+
 // Helpers.
 
 function showError(msg) {
@@ -305,6 +320,17 @@ function storageSet(data) {
   return new Promise((resolve) => chrome.storage.local.set(data, resolve));
 }
 
+async function loadLatencyPreference() {
+  const data = await storageGet("latencyCheckEnabled");
+  if (typeof data.latencyCheckEnabled === "boolean") {
+    isLatencyCheckEnabled = data.latencyCheckEnabled;
+  } else {
+    isLatencyCheckEnabled = true;
+  }
+
+  latencyCheckEnabledInput.checked = isLatencyCheckEnabled;
+}
+
 function normalizePort(value) {
   const asString = typeof value === "string" ? value.trim() : String(value || "").trim();
   if (!/^\d+$/.test(asString)) {
@@ -323,7 +349,7 @@ async function refreshLatency(protocol, host, port) {
   const requestId = ++latencyRequestId;
   const latencyResult = await sendMessage({ action: "getProxyLatency" });
 
-  if (!isConnectedState || requestId !== latencyRequestId) {
+  if (!isConnectedState || !isLatencyCheckEnabled || requestId !== latencyRequestId) {
     return;
   }
 

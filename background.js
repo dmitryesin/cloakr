@@ -243,37 +243,66 @@ async function reloadCurrentTab() {
   });
 }
 
+const LATENCY_TEST_URLS = [
+  "https://www.gstatic.com/generate_204",
+  "https://www.google.com/generate_204",
+];
+
+async function probeLatency(url, timeoutMs) {
+  const startedAt = performance.now();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      cache: "no-store",
+      signal: controller.signal,
+    });
+
+    if (response.status === 204) {
+      return {
+        success: true,
+        latencyMs: Math.round(performance.now() - startedAt),
+      };
+    }
+
+    if (response.status === 407) {
+      return { success: false, reason: "proxy_auth_required" };
+    }
+
+    return { success: false, reason: `http_${response.status}` };
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      return { success: false, reason: "timeout" };
+    }
+
+    return { success: false, reason: "network_error" };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 async function measureProxyLatency() {
   const status = await getProxyStatus();
   if (!status.enabled) {
     return { success: false, error: "Proxy is not enabled" };
   }
 
-  const testUrl = "https://www.gstatic.com/generate_204";
-  const startedAt = performance.now();
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-  try {
-    const response = await fetch(testUrl, {
-      method: "GET",
-      cache: "no-store",
-      signal: controller.signal,
-    });
-
-    if (!response.ok && response.status !== 204) {
-      return { success: false, reason: "n/a" };
+  let lastFailure = { success: false, reason: "network_error" };
+  for (const url of LATENCY_TEST_URLS) {
+    const result = await probeLatency(url, 3000);
+    if (result.success) {
+      return result;
     }
 
-    const latencyMs = Math.round(performance.now() - startedAt);
-    return { success: true, latencyMs };
-  } catch (error) {
-    if (error?.name === "AbortError") {
-      return { success: false, reason: "timeout" };
+    // This is a definitive proxy-side failure and should not be masked by fallback endpoints.
+    if (result.reason === "proxy_auth_required") {
+      return result;
     }
 
-    return { success: false, reason: "n/a" };
-  } finally {
-    clearTimeout(timeoutId);
+    lastFailure = result;
   }
+
+  return lastFailure;
 }
