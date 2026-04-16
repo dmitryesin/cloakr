@@ -55,7 +55,7 @@ function setConnectedUI(protocol, host, port, latencyDisplay = null) {
   statusBadge.textContent = "ON";
   statusBadge.className = "status-badge status-on";
   statusBar.className = "status-bar status-bar--active";
-  statusText.textContent = `Connected via ${protocolLabel} ${host}:${port}${latencyLabel}`;
+  statusText.textContent = `Using ${protocolLabel} ${host}:${port}${latencyLabel}`;
   connectBtn.style.display = "none";
   disconnectBtn.style.display = "";
   isConnectedState = true;
@@ -65,7 +65,7 @@ function setDisconnectedUI() {
   statusBadge.textContent = "OFF";
   statusBadge.className = "status-badge status-off";
   statusBar.className = "status-bar status-bar--inactive";
-  statusText.textContent = "Not connected";
+  statusText.textContent = "Proxy is off";
   connectBtn.style.display = "";
   disconnectBtn.style.display = "none";
   isConnectedState = false;
@@ -85,11 +85,10 @@ connectBtn.addEventListener("click", async () => {
   const password = passwordInput.value;
   const rememberPassword = rememberPasswordInput.checked;
 
-  if (!host) return showError("Please enter a host or IP address.");
-  if (normalizedPort == null)
-    return showError("Please enter a valid port (1–65535).");
+  if (!host) return showError("Enter server address.");
+  if (normalizedPort == null) return showError("Enter a valid port (1-65535).");
 
-  connectBtn.textContent = "Connecting…";
+  connectBtn.textContent = "Turning on...";
   connectBtn.disabled = true;
 
   const result = await sendMessage({
@@ -97,7 +96,7 @@ connectBtn.addEventListener("click", async () => {
     config: { protocol, host, port: normalizedPort, username, password, rememberPassword },
   });
 
-  connectBtn.textContent = "Connect";
+  connectBtn.textContent = "Turn on";
   connectBtn.disabled = false;
 
   if (result.success) {
@@ -110,24 +109,24 @@ connectBtn.addEventListener("click", async () => {
     chrome.storage.local.set({ lastConfig });
     await sendMessage({ action: "reloadCurrentTab" });
   } else {
-    showError(result.error || "Failed to set proxy.");
+    showError(result.error || "Could not apply proxy settings.");
   }
 });
 
 disconnectBtn.addEventListener("click", async () => {
-  disconnectBtn.textContent = "Disconnecting…";
+  disconnectBtn.textContent = "Turning off...";
   disconnectBtn.disabled = true;
 
   const result = await sendMessage({ action: "clearProxy" });
 
   if (!result.success) {
-    disconnectBtn.textContent = "Disconnect";
+    disconnectBtn.textContent = "Turn off";
     disconnectBtn.disabled = false;
-    showError(result.error || "Failed to clear proxy.");
+    showError(result.error || "Could not turn off proxy.");
     return;
   }
 
-  disconnectBtn.textContent = "Disconnect";
+  disconnectBtn.textContent = "Turn off";
   disconnectBtn.disabled = false;
 
   setDisconnectedUI();
@@ -145,8 +144,8 @@ saveBtn.addEventListener("click", async () => {
   const password = passwordInput.value;
   const rememberPassword = rememberPasswordInput.checked;
 
-  if (!host) return showError("Enter host to save.");
-  if (normalizedPort == null) return showError("Enter a valid port (1–65535) to save.");
+  if (!host) return showError("Enter server address before saving.");
+  if (normalizedPort == null) return showError("Enter a valid port (1-65535) before saving.");
   hideError();
 
   const data = await storageGet("savedProxies");
@@ -160,7 +159,7 @@ saveBtn.addEventListener("click", async () => {
   const exists = list.find(
     (p) => (p.protocol || "socks5") === protocol && p.host === host && p.port === normalizedPort
   );
-  if (exists) return showError("This proxy is already saved.");
+  if (exists) return showError("This configuration is already saved.");
 
   const savedProxy = {
     protocol,
@@ -178,13 +177,13 @@ saveBtn.addEventListener("click", async () => {
   list.push(savedProxy);
   await storageSet({ savedProxies: list });
 
-  saveBtn.textContent = "Saved!";
+  saveBtn.textContent = "Saved";
   setTimeout(() => {
     saveBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
       <polyline points="17 21 17 13 7 13 7 21"/>
       <polyline points="7 3 7 8 15 8"/>
-    </svg> Save`;
+    </svg> Save preset`;
   }, 1200);
 
   await loadSavedProxies();

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Proxy Manager</title>
+    <title>Proxy Settings</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
@@ -11,20 +11,20 @@
       <!-- Header -->
       <header class="header">
         <div class="header-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="2" y1="12" x2="22" y2="12"/>
-            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.5 12a8.5 8.5 0 1 1-8.5-8.5"/>
+            <path d="M22 4v6h-6"/>
+            <path d="M13.4 10.6a2.6 2.6 0 1 1-3.7 3.7"/>
           </svg>
         </div>
-        <span class="header-title">Proxy Manager</span>
+        <span class="header-title">Proxy settings</span>
         <div id="statusBadge" class="status-badge status-off">OFF</div>
       </header>
 
       <!-- Status bar -->
       <div id="statusBar" class="status-bar status-bar--inactive">
         <div class="status-dot"></div>
-        <span id="statusText">Not connected</span>
+        <span id="statusText">Proxy is off</span>
       </div>
 
       <!-- Form -->
@@ -40,7 +40,7 @@
 
         <div class="form-row">
           <div class="form-group form-group--host">
-            <label class="label" for="host">Host / IP</label>
+            <label class="label" for="host">Server</label>
             <input
               type="text"
               id="host"
@@ -73,7 +73,7 @@
             type="text"
             id="username"
             class="input"
-            placeholder="Leave empty if not required"
+            placeholder="Optional"
             autocomplete="off"
           />
         </div>
@@ -85,10 +85,10 @@
               type="password"
               id="password"
               class="input"
-              placeholder="Leave empty if not required"
+              placeholder="Optional"
               autocomplete="off"
             />
-            <button id="togglePassword" class="toggle-password" type="button" title="Show/hide password">
+            <button id="togglePassword" class="toggle-password" type="button" title="Show or hide password">
               <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                 <circle cx="12" cy="12" r="3"/>
@@ -99,40 +99,40 @@
 
         <label class="remember-password" for="rememberPassword">
           <input type="checkbox" id="rememberPassword" />
-          <span>Remember password on this device</span>
+          <span>Store password on this device</span>
         </label>
 
         <label class="remember-password" for="latencyCheckEnabled">
           <input type="checkbox" id="latencyCheckEnabled" checked />
-          <span>Measure proxy latency</span>
+          <span>Show latency in status</span>
         </label>
       </div>
 
       <!-- Saved proxies -->
       <div id="savedSection" class="saved-section" style="display:none">
         <div class="saved-header">
-          <span>Saved proxies</span>
+          <span>Saved configurations</span>
         </div>
         <div id="savedList" class="saved-list"></div>
       </div>
 
       <!-- Actions -->
       <div class="actions">
-        <button id="saveBtn" class="btn btn--secondary" title="Save current settings">
+        <button id="saveBtn" class="btn btn--secondary" title="Save current configuration">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
             <polyline points="17 21 17 13 7 13 7 21"/>
             <polyline points="7 3 7 8 15 8"/>
           </svg>
-          Save
+          Save preset
         </button>
 
         <button id="connectBtn" class="btn btn--primary">
-          Connect
+          Turn on
         </button>
 
         <button id="disconnectBtn" class="btn btn--danger" style="display:none">
-          Disconnect
+          Turn off
         </button>
       </div>
 
