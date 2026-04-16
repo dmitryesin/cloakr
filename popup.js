@@ -19,7 +19,7 @@ const latencyCheckEnabledInput = document.getElementById("latencyCheckEnabled");
 const MAX_SAVED_PROXIES = 30;
 let latencyRequestId = 0;
 let isConnectedState = false;
-let isLatencyCheckEnabled = true;
+let isLatencyCheckEnabled = false;
 
 // Initialization.
 
@@ -324,7 +324,7 @@ async function loadLatencyPreference() {
   if (typeof data.latencyCheckEnabled === "boolean") {
     isLatencyCheckEnabled = data.latencyCheckEnabled;
   } else {
-    isLatencyCheckEnabled = true;
+    isLatencyCheckEnabled = false;
   }
 
   latencyCheckEnabledInput.checked = isLatencyCheckEnabled;
