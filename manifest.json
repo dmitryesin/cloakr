@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "SOCKS5 Proxy Manager",
+  "name": "Proxy Manager",
   "version": "1.0.0",
-  "description": "Easily manage SOCKS5 proxy settings in Chrome",
+  "description": "Easily manage SOCKS5, HTTP, and HTTPS proxy settings in Chrome",
   "permissions": [
     "proxy",
     "storage",

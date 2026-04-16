@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SOCKS5 Proxy Manager</title>
+    <title>Proxy Manager</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
@@ -17,7 +17,7 @@
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
           </svg>
         </div>
-        <span class="header-title">SOCKS5 Proxy</span>
+        <span class="header-title">Proxy Manager</span>
         <div id="statusBadge" class="status-badge status-off">OFF</div>
       </header>
 
@@ -29,6 +29,15 @@
 
       <!-- Form -->
       <div class="form">
+        <div class="form-group">
+          <label class="label" for="protocol">Protocol</label>
+          <select id="protocol" class="input">
+            <option value="socks5">SOCKS5</option>
+            <option value="http">HTTP</option>
+            <option value="https">HTTPS</option>
+          </select>
+        </div>
+
         <div class="form-row">
           <div class="form-group form-group--host">
             <label class="label" for="host">Host / IP</label>

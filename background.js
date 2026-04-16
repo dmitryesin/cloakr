@@ -32,14 +32,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// Apply SOCKS5 proxy settings
+// Apply proxy settings for supported protocols
 async function applyProxy(config) {
-  const { host, port, username, password } = config;
+  const { protocol, host, port, username, password } = config;
 
   const normalizedHost = typeof host === "string" ? host.trim() : "";
   const normalizedPort = Number.parseInt(port, 10);
+  const normalizedProtocol = typeof protocol === "string" ? protocol.toLowerCase().trim() : "socks5";
+  const supportedProtocols = ["socks5", "http", "https"];
 
-  if (!normalizedHost || !Number.isInteger(normalizedPort) || normalizedPort < 1 || normalizedPort > 65535) {
+  if (
+    !normalizedHost ||
+    !Number.isInteger(normalizedPort) ||
+    normalizedPort < 1 ||
+    normalizedPort > 65535 ||
+    !supportedProtocols.includes(normalizedProtocol)
+  ) {
     throw new Error("Host and port are required");
   }
 
@@ -54,7 +62,7 @@ async function applyProxy(config) {
     mode: "fixed_servers",
     rules: {
       singleProxy: {
-        scheme: "socks5",
+        scheme: normalizedProtocol,
         host: normalizedHost,
         port: normalizedPort,
       },
@@ -122,9 +130,9 @@ chrome.storage.local.get(["proxyConfig", "proxyEnabled"], async (data) => {
   if (data.proxyEnabled && data.proxyConfig) {
     try {
       await applyProxy(data.proxyConfig);
-      console.log("[SOCKS5 Proxy] Restored proxy settings on startup");
+      console.log("[Proxy Manager] Restored proxy settings on startup");
     } catch (e) {
-      console.error("[SOCKS5 Proxy] Failed to restore settings:", e);
+      console.error("[Proxy Manager] Failed to restore settings:", e);
     }
   }
 });

@@ -2,6 +2,7 @@
 
 const hostInput = document.getElementById("host");
 const portInput = document.getElementById("port");
+const protocolInput = document.getElementById("protocol");
 const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
 const connectBtn = document.getElementById("connectBtn");
@@ -29,17 +30,18 @@ async function refreshStatus() {
   const { enabled, config } = await sendMessage({ action: "getStatus" });
 
   if (enabled && config) {
-    setConnectedUI(config.host, config.port);
+    setConnectedUI(config.scheme, config.host, config.port);
   } else {
     setDisconnectedUI();
   }
 }
 
-function setConnectedUI(host, port) {
+function setConnectedUI(protocol, host, port) {
+  const protocolLabel = (protocol || "socks5").toUpperCase();
   statusBadge.textContent = "ON";
   statusBadge.className = "status-badge status-on";
   statusBar.className = "status-bar status-bar--active";
-  statusText.textContent = `Connected via ${host}:${port}`;
+  statusText.textContent = `Connected via ${protocolLabel} ${host}:${port}`;
   connectBtn.style.display = "none";
   disconnectBtn.style.display = "";
 }
@@ -60,6 +62,7 @@ connectBtn.addEventListener("click", async () => {
 
   const host = hostInput.value.trim();
   const port = portInput.value.trim();
+  const protocol = protocolInput.value;
   const username = usernameInput.value.trim();
   const password = passwordInput.value;
 
@@ -72,16 +75,16 @@ connectBtn.addEventListener("click", async () => {
 
   const result = await sendMessage({
     action: "setProxy",
-    config: { host, port: Number(port), username, password },
+    config: { protocol, host, port: Number(port), username, password },
   });
 
   connectBtn.textContent = "Connect";
   connectBtn.disabled = false;
 
   if (result.success) {
-    setConnectedUI(host, port);
+    setConnectedUI(protocol, host, port);
     // Save last used config
-    chrome.storage.local.set({ lastConfig: { host, port, username } });
+    chrome.storage.local.set({ lastConfig: { protocol, host, port, username } });
     await sendMessage({ action: "reloadCurrentTab" });
   } else {
     showError(result.error || "Failed to set proxy.");
@@ -113,6 +116,7 @@ disconnectBtn.addEventListener("click", async () => {
 saveBtn.addEventListener("click", async () => {
   const host = hostInput.value.trim();
   const port = portInput.value.trim();
+  const protocol = protocolInput.value;
   const username = usernameInput.value.trim();
   const password = passwordInput.value;
 
@@ -122,11 +126,13 @@ saveBtn.addEventListener("click", async () => {
   const data = await storageGet("savedProxies");
   const list = data.savedProxies || [];
 
-  // Avoid duplicates by host:port
-  const exists = list.find((p) => p.host === host && p.port === Number(port));
-  if (exists) return showError("This host:port is already saved.");
+  // Avoid duplicates by protocol + host:port
+  const exists = list.find(
+    (p) => (p.protocol || "socks5") === protocol && p.host === host && p.port === Number(port)
+  );
+  if (exists) return showError("This proxy is already saved.");
 
-  list.push({ host, port: Number(port), username, password, id: Date.now() });
+  list.push({ protocol, host, port: Number(port), username, password, id: Date.now() });
   await storageSet({ savedProxies: list });
 
   saveBtn.textContent = "Saved!";
@@ -161,7 +167,9 @@ async function loadSavedProxies() {
 
     const nameEl = document.createElement("span");
     nameEl.className = "saved-item-name";
-    nameEl.textContent = proxy.username ? `${proxy.username}@${proxy.host}` : proxy.host;
+    const proxyProtocol = (proxy.protocol || "socks5").toUpperCase();
+    const hostLabel = proxy.username ? `${proxy.username}@${proxy.host}` : proxy.host;
+    nameEl.textContent = `${proxyProtocol} ${hostLabel}`;
 
     const addrEl = document.createElement("span");
     addrEl.className = "saved-item-addr";
@@ -177,6 +185,7 @@ async function loadSavedProxies() {
     // Load proxy into form
     item.addEventListener("click", (e) => {
       if (e.target.closest(".saved-item-delete")) return;
+      protocolInput.value = proxy.protocol || "socks5";
       hostInput.value = proxy.host;
       portInput.value = proxy.port;
       usernameInput.value = proxy.username || "";
@@ -203,7 +212,8 @@ async function loadSavedProxies() {
 async function loadLastConfig() {
   const data = await storageGet("lastConfig");
   if (data.lastConfig) {
-    const { host, port, username } = data.lastConfig;
+    const { protocol, host, port, username } = data.lastConfig;
+    protocolInput.value = protocol || "socks5";
     if (!hostInput.value) hostInput.value = host || "";
     if (!portInput.value) portInput.value = port || "";
     if (!usernameInput.value) usernameInput.value = username || "";
