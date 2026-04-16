@@ -30,6 +30,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch((err) => sendResponse({ success: false, error: err.message }));
     return true;
   }
+
+  if (message.action === "getProxyLatency") {
+    measureProxyLatency()
+      .then((result) => sendResponse(result))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
 });
 
 // Apply proxy settings for supported protocols
@@ -148,4 +155,30 @@ async function reloadCurrentTab() {
   await new Promise((resolve) => {
     chrome.tabs.reload(activeTab.id, {}, () => resolve());
   });
+}
+
+async function measureProxyLatency() {
+  const status = await getProxyStatus();
+  if (!status.enabled) {
+    return { success: false, error: "Proxy is not enabled" };
+  }
+
+  const testUrl = "https://www.gstatic.com/generate_204";
+  const startedAt = performance.now();
+
+  try {
+    const response = await fetch(testUrl, {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!response.ok && response.status !== 204) {
+      return { success: false, error: `Latency check failed with status ${response.status}` };
+    }
+
+    const latencyMs = Math.round(performance.now() - startedAt);
+    return { success: true, latencyMs };
+  } catch (error) {
+    return { success: false, error: error?.message || "Latency check failed" };
+  }
 }

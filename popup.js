@@ -30,18 +30,20 @@ async function refreshStatus() {
   const { enabled, config } = await sendMessage({ action: "getStatus" });
 
   if (enabled && config) {
-    setConnectedUI(config.scheme, config.host, config.port);
+    setConnectedUI(config.scheme, config.host, config.port, null);
+    await refreshLatency(config.scheme, config.host, config.port);
   } else {
     setDisconnectedUI();
   }
 }
 
-function setConnectedUI(protocol, host, port) {
+function setConnectedUI(protocol, host, port, latencyMs = null) {
   const protocolLabel = (protocol || "socks5").toUpperCase();
+  const latencyLabel = Number.isInteger(latencyMs) ? ` | ${latencyMs} ms` : "";
   statusBadge.textContent = "ON";
   statusBadge.className = "status-badge status-on";
   statusBar.className = "status-bar status-bar--active";
-  statusText.textContent = `Connected via ${protocolLabel} ${host}:${port}`;
+  statusText.textContent = `Connected via ${protocolLabel} ${host}:${port}${latencyLabel}`;
   connectBtn.style.display = "none";
   disconnectBtn.style.display = "";
 }
@@ -82,10 +84,11 @@ connectBtn.addEventListener("click", async () => {
   connectBtn.disabled = false;
 
   if (result.success) {
-    setConnectedUI(protocol, host, port);
+    setConnectedUI(protocol, host, port, null);
     // Save last used config
     chrome.storage.local.set({ lastConfig: { protocol, host, port, username } });
     await sendMessage({ action: "reloadCurrentTab" });
+    await refreshLatency(protocol, host, port);
   } else {
     showError(result.error || "Failed to set proxy.");
   }
@@ -263,4 +266,14 @@ function storageGet(keys) {
 
 function storageSet(data) {
   return new Promise((resolve) => chrome.storage.local.set(data, resolve));
+}
+
+async function refreshLatency(protocol, host, port) {
+  const latencyResult = await sendMessage({ action: "getProxyLatency" });
+  if (latencyResult.success && Number.isInteger(latencyResult.latencyMs)) {
+    setConnectedUI(protocol, host, port, latencyResult.latencyMs);
+    return;
+  }
+
+  setConnectedUI(protocol, host, port, null);
 }
