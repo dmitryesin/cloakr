@@ -162,20 +162,29 @@ async function measureProxyLatency() {
 
   const testUrl = "https://www.gstatic.com/generate_204";
   const startedAt = performance.now();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3000);
 
   try {
     const response = await fetch(testUrl, {
       method: "GET",
       cache: "no-store",
+      signal: controller.signal,
     });
 
     if (!response.ok && response.status !== 204) {
-      return { success: false, error: `Latency check failed with status ${response.status}` };
+      return { success: false, reason: "n/a" };
     }
 
     const latencyMs = Math.round(performance.now() - startedAt);
     return { success: true, latencyMs };
   } catch (error) {
-    return { success: false, error: error?.message || "Latency check failed" };
+    if (error?.name === "AbortError") {
+      return { success: false, reason: "timeout" };
+    }
+
+    return { success: false, reason: "n/a" };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }

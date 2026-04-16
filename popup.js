@@ -17,9 +17,9 @@ const savedList = document.getElementById("savedList");
 // Initialization.
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await loadSavedProxies();
-  await refreshStatus();
-  await loadLastConfig();
+  void loadSavedProxies();
+  void refreshStatus();
+  void loadLastConfig();
 });
 
 // Status.
@@ -28,16 +28,20 @@ async function refreshStatus() {
   const { enabled, config } = await sendMessage({ action: "getStatus" });
 
   if (enabled && config) {
-    setConnectedUI(config.scheme, config.host, config.port, null);
-    await refreshLatency(config.scheme, config.host, config.port);
+    setConnectedUI(config.scheme, config.host, config.port);
+    void refreshLatency(config.scheme, config.host, config.port);
   } else {
     setDisconnectedUI();
   }
 }
 
-function setConnectedUI(protocol, host, port, latencyMs = null) {
+function setConnectedUI(protocol, host, port, latencyDisplay = null) {
   const protocolLabel = (protocol || "socks5").toUpperCase();
-  const latencyLabel = Number.isInteger(latencyMs) ? ` | ${latencyMs} ms` : "";
+  const latencyLabel = Number.isInteger(latencyDisplay)
+    ? ` | ${latencyDisplay} ms`
+    : typeof latencyDisplay === "string" && latencyDisplay
+      ? ` | ${latencyDisplay}`
+      : "";
   statusBadge.textContent = "ON";
   statusBadge.className = "status-badge status-on";
   statusBar.className = "status-bar status-bar--active";
@@ -82,10 +86,10 @@ connectBtn.addEventListener("click", async () => {
   connectBtn.disabled = false;
 
   if (result.success) {
-    setConnectedUI(protocol, host, port, null);
+    setConnectedUI(protocol, host, port);
+    void refreshLatency(protocol, host, port);
     chrome.storage.local.set({ lastConfig: { protocol, host, port, username } });
     await sendMessage({ action: "reloadCurrentTab" });
-    await refreshLatency(protocol, host, port);
   } else {
     showError(result.error || "Failed to set proxy.");
   }
@@ -270,5 +274,5 @@ async function refreshLatency(protocol, host, port) {
     return;
   }
 
-  setConnectedUI(protocol, host, port, null);
+  setConnectedUI(protocol, host, port, latencyResult.reason || "n/a");
 }
