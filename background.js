@@ -1,15 +1,13 @@
-// background.js — Service Worker
-// Handles proxy configuration and authentication
+// Service worker for proxy configuration and authentication.
 
 let proxyCredentials = null;
 
-// Listen for messages from popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "setProxy") {
     applyProxy(message.config)
       .then(() => sendResponse({ success: true }))
       .catch((err) => sendResponse({ success: false, error: err.message }));
-    return true; // keep channel open for async response
+    return true;
   }
 
   if (message.action === "clearProxy") {
@@ -39,7 +37,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// Apply proxy settings for supported protocols
+// Apply proxy settings.
 async function applyProxy(config) {
   const { protocol, host, port, username, password } = config;
 
@@ -58,7 +56,7 @@ async function applyProxy(config) {
     throw new Error("Host and port are required");
   }
 
-  // Save credentials for auth handler
+  // Cache credentials for proxy auth challenges.
   if (username) {
     proxyCredentials = { username, password: password || "" };
   } else {
@@ -82,14 +80,14 @@ async function applyProxy(config) {
     scope: "regular",
   });
 
-  // Save to storage so we can restore on browser restart
+  // Persist the active configuration.
   await chrome.storage.local.set({
     proxyConfig: config,
     proxyEnabled: true,
   });
 }
 
-// Clear proxy and revert to system settings
+// Reset browser proxy settings.
 async function clearProxy() {
   proxyCredentials = null;
 
@@ -97,7 +95,6 @@ async function clearProxy() {
   await chrome.storage.local.set({ proxyEnabled: false });
 }
 
-// Get current proxy status
 async function getProxyStatus() {
   return new Promise((resolve) => {
     chrome.proxy.settings.get({ incognito: false }, (details) => {
@@ -110,7 +107,7 @@ async function getProxyStatus() {
   });
 }
 
-// Handle proxy authentication
+// Respond to proxy auth challenges.
 chrome.webRequest.onAuthRequired.addListener(
   (details, callback) => {
     if (
@@ -132,7 +129,7 @@ chrome.webRequest.onAuthRequired.addListener(
   ["asyncBlocking"]
 );
 
-// Restore proxy settings on service worker startup
+// Restore the saved proxy on startup.
 chrome.storage.local.get(["proxyConfig", "proxyEnabled"], async (data) => {
   if (data.proxyEnabled && data.proxyConfig) {
     try {

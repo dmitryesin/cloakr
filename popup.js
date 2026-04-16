@@ -1,5 +1,3 @@
-// popup.js
-
 const hostInput = document.getElementById("host");
 const portInput = document.getElementById("port");
 const protocolInput = document.getElementById("protocol");
@@ -16,7 +14,7 @@ const togglePassword = document.getElementById("togglePassword");
 const savedSection = document.getElementById("savedSection");
 const savedList = document.getElementById("savedList");
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+// Initialization.
 
 document.addEventListener("DOMContentLoaded", async () => {
   await loadSavedProxies();
@@ -24,7 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadLastConfig();
 });
 
-// ── Status ────────────────────────────────────────────────────────────────────
+// Status.
 
 async function refreshStatus() {
   const { enabled, config } = await sendMessage({ action: "getStatus" });
@@ -57,7 +55,7 @@ function setDisconnectedUI() {
   disconnectBtn.style.display = "none";
 }
 
-// ── Connect / Disconnect ──────────────────────────────────────────────────────
+// Connection controls.
 
 connectBtn.addEventListener("click", async () => {
   hideError();
@@ -85,7 +83,6 @@ connectBtn.addEventListener("click", async () => {
 
   if (result.success) {
     setConnectedUI(protocol, host, port, null);
-    // Save last used config
     chrome.storage.local.set({ lastConfig: { protocol, host, port, username } });
     await sendMessage({ action: "reloadCurrentTab" });
     await refreshLatency(protocol, host, port);
@@ -114,7 +111,7 @@ disconnectBtn.addEventListener("click", async () => {
   await sendMessage({ action: "reloadCurrentTab" });
 });
 
-// ── Save proxy ────────────────────────────────────────────────────────────────
+// Save proxy.
 
 saveBtn.addEventListener("click", async () => {
   const host = hostInput.value.trim();
@@ -150,7 +147,7 @@ saveBtn.addEventListener("click", async () => {
   await loadSavedProxies();
 });
 
-// ── Saved proxies list ────────────────────────────────────────────────────────
+// Saved proxies list.
 
 async function loadSavedProxies() {
   const data = await storageGet("savedProxies");
@@ -185,7 +182,6 @@ async function loadSavedProxies() {
       <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
     </svg>`;
 
-    // Load proxy into form
     item.addEventListener("click", (e) => {
       if (e.target.closest(".saved-item-delete")) return;
       protocolInput.value = proxy.protocol || "socks5";
@@ -195,7 +191,6 @@ async function loadSavedProxies() {
       passwordInput.value = proxy.password || "";
     });
 
-    // Delete saved proxy
     delBtn.addEventListener("click", async (e) => {
       e.stopPropagation();
       const newList = list.filter((p) => p.id !== proxy.id);
@@ -210,7 +205,7 @@ async function loadSavedProxies() {
   });
 }
 
-// ── Restore last config ───────────────────────────────────────────────────────
+// Restore last config.
 
 async function loadLastConfig() {
   const data = await storageGet("lastConfig");
@@ -223,7 +218,7 @@ async function loadLastConfig() {
   }
 }
 
-// ── Password visibility toggle ────────────────────────────────────────────────
+// Password visibility toggle.
 
 togglePassword.addEventListener("click", () => {
   const isPassword = passwordInput.type === "password";
@@ -236,7 +231,7 @@ togglePassword.addEventListener("click", () => {
        <circle cx="12" cy="12" r="3"/>`;
 });
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// Helpers.
 
 function showError(msg) {
   errorMsg.textContent = msg;
