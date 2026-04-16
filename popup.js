@@ -3,6 +3,7 @@ const portInput = document.getElementById("port");
 const protocolInput = document.getElementById("protocol");
 const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
+const rememberPasswordInput = document.getElementById("rememberPassword");
 const connectBtn = document.getElementById("connectBtn");
 const disconnectBtn = document.getElementById("disconnectBtn");
 const saveBtn = document.getElementById("saveBtn");
@@ -13,6 +14,8 @@ const errorMsg = document.getElementById("errorMsg");
 const togglePassword = document.getElementById("togglePassword");
 const savedSection = document.getElementById("savedSection");
 const savedList = document.getElementById("savedList");
+
+const MAX_SAVED_PROXIES = 30;
 
 // Initialization.
 
@@ -69,6 +72,7 @@ connectBtn.addEventListener("click", async () => {
   const protocol = protocolInput.value;
   const username = usernameInput.value.trim();
   const password = passwordInput.value;
+  const rememberPassword = rememberPasswordInput.checked;
 
   if (!host) return showError("Please enter a host or IP address.");
   if (!port || isNaN(port) || port < 1 || port > 65535)
@@ -79,7 +83,7 @@ connectBtn.addEventListener("click", async () => {
 
   const result = await sendMessage({
     action: "setProxy",
-    config: { protocol, host, port: Number(port), username, password },
+    config: { protocol, host, port: Number(port), username, password, rememberPassword },
   });
 
   connectBtn.textContent = "Connect";
@@ -88,7 +92,11 @@ connectBtn.addEventListener("click", async () => {
   if (result.success) {
     setConnectedUI(protocol, host, port);
     void refreshLatency(protocol, host, port);
-    chrome.storage.local.set({ lastConfig: { protocol, host, port, username } });
+    const lastConfig = { protocol, host, port, username, rememberPassword };
+    if (rememberPassword) {
+      lastConfig.password = password;
+    }
+    chrome.storage.local.set({ lastConfig });
     await sendMessage({ action: "reloadCurrentTab" });
   } else {
     showError(result.error || "Failed to set proxy.");
@@ -123,6 +131,7 @@ saveBtn.addEventListener("click", async () => {
   const protocol = protocolInput.value;
   const username = usernameInput.value.trim();
   const password = passwordInput.value;
+  const rememberPassword = rememberPasswordInput.checked;
 
   if (!host || !port) return showError("Enter host and port to save.");
   hideError();
@@ -130,13 +139,30 @@ saveBtn.addEventListener("click", async () => {
   const data = await storageGet("savedProxies");
   const list = data.savedProxies || [];
 
+  if (list.length >= MAX_SAVED_PROXIES) {
+    return showError(`Maximum ${MAX_SAVED_PROXIES} saved proxies reached. Remove old entries to add a new one.`);
+  }
+
   // Avoid duplicates by protocol + host:port
   const exists = list.find(
     (p) => (p.protocol || "socks5") === protocol && p.host === host && p.port === Number(port)
   );
   if (exists) return showError("This proxy is already saved.");
 
-  list.push({ protocol, host, port: Number(port), username, password, id: Date.now() });
+  const savedProxy = {
+    protocol,
+    host,
+    port: Number(port),
+    username,
+    rememberPassword,
+    id: Date.now(),
+  };
+
+  if (rememberPassword) {
+    savedProxy.password = password;
+  }
+
+  list.push(savedProxy);
   await storageSet({ savedProxies: list });
 
   saveBtn.textContent = "Saved!";
@@ -192,7 +218,9 @@ async function loadSavedProxies() {
       hostInput.value = proxy.host;
       portInput.value = proxy.port;
       usernameInput.value = proxy.username || "";
-      passwordInput.value = proxy.password || "";
+      const isRemembered = Boolean(proxy.rememberPassword && proxy.password);
+      rememberPasswordInput.checked = isRemembered;
+      passwordInput.value = isRemembered ? proxy.password : "";
     });
 
     delBtn.addEventListener("click", async (e) => {
@@ -214,11 +242,13 @@ async function loadSavedProxies() {
 async function loadLastConfig() {
   const data = await storageGet("lastConfig");
   if (data.lastConfig) {
-    const { protocol, host, port, username } = data.lastConfig;
+    const { protocol, host, port, username, rememberPassword, password } = data.lastConfig;
     protocolInput.value = protocol || "socks5";
     if (!hostInput.value) hostInput.value = host || "";
     if (!portInput.value) portInput.value = port || "";
     if (!usernameInput.value) usernameInput.value = username || "";
+    rememberPasswordInput.checked = Boolean(rememberPassword && password);
+    passwordInput.value = rememberPassword ? password || "" : "";
   }
 }
 

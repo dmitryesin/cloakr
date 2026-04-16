@@ -39,12 +39,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Apply proxy settings.
 async function applyProxy(config) {
-  const { protocol, host, port, username, password } = config;
+  const { protocol, host, port, username, password, rememberPassword } = config;
 
   const normalizedHost = typeof host === "string" ? host.trim() : "";
   const normalizedPort = Number.parseInt(port, 10);
   const normalizedProtocol = typeof protocol === "string" ? protocol.toLowerCase().trim() : "socks5";
+  const normalizedRememberPassword = Boolean(rememberPassword);
   const supportedProtocols = ["socks5", "http", "https"];
+  const hasPassword = Object.prototype.hasOwnProperty.call(config, "password");
 
   if (
     !normalizedHost ||
@@ -57,7 +59,7 @@ async function applyProxy(config) {
   }
 
   // Cache credentials for proxy auth challenges.
-  if (username) {
+  if (username && hasPassword) {
     proxyCredentials = { username, password: password || "" };
   } else {
     proxyCredentials = null;
@@ -80,9 +82,21 @@ async function applyProxy(config) {
     scope: "regular",
   });
 
+  const persistedConfig = {
+    protocol: normalizedProtocol,
+    host: normalizedHost,
+    port: normalizedPort,
+    username,
+    rememberPassword: normalizedRememberPassword,
+  };
+
+  if (normalizedRememberPassword && hasPassword) {
+    persistedConfig.password = password || "";
+  }
+
   // Persist the active configuration.
   await chrome.storage.local.set({
-    proxyConfig: config,
+    proxyConfig: persistedConfig,
     proxyEnabled: true,
   });
 }

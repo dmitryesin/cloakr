@@ -203,6 +203,20 @@ body {
   color: var(--text);
 }
 
+.remember-password {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-dim);
+  user-select: none;
+  cursor: pointer;
+}
+
+.remember-password input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
 /* Divider */
 .divider {
   display: flex;
