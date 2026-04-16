@@ -16,6 +16,8 @@ const savedSection = document.getElementById("savedSection");
 const savedList = document.getElementById("savedList");
 
 const MAX_SAVED_PROXIES = 30;
+let latencyRequestId = 0;
+let isConnectedState = false;
 
 // Initialization.
 
@@ -51,6 +53,7 @@ function setConnectedUI(protocol, host, port, latencyDisplay = null) {
   statusText.textContent = `Connected via ${protocolLabel} ${host}:${port}${latencyLabel}`;
   connectBtn.style.display = "none";
   disconnectBtn.style.display = "";
+  isConnectedState = true;
 }
 
 function setDisconnectedUI() {
@@ -60,6 +63,8 @@ function setDisconnectedUI() {
   statusText.textContent = "Not connected";
   connectBtn.style.display = "";
   disconnectBtn.style.display = "none";
+  isConnectedState = false;
+  latencyRequestId += 1;
 }
 
 // Connection controls.
@@ -69,13 +74,14 @@ connectBtn.addEventListener("click", async () => {
 
   const host = hostInput.value.trim();
   const port = portInput.value.trim();
+  const normalizedPort = normalizePort(port);
   const protocol = protocolInput.value;
   const username = usernameInput.value.trim();
   const password = passwordInput.value;
   const rememberPassword = rememberPasswordInput.checked;
 
   if (!host) return showError("Please enter a host or IP address.");
-  if (!port || isNaN(port) || port < 1 || port > 65535)
+  if (normalizedPort == null)
     return showError("Please enter a valid port (1–65535).");
 
   connectBtn.textContent = "Connecting…";
@@ -83,16 +89,16 @@ connectBtn.addEventListener("click", async () => {
 
   const result = await sendMessage({
     action: "setProxy",
-    config: { protocol, host, port: Number(port), username, password, rememberPassword },
+    config: { protocol, host, port: normalizedPort, username, password, rememberPassword },
   });
 
   connectBtn.textContent = "Connect";
   connectBtn.disabled = false;
 
   if (result.success) {
-    setConnectedUI(protocol, host, port);
-    void refreshLatency(protocol, host, port);
-    const lastConfig = { protocol, host, port, username, rememberPassword };
+    setConnectedUI(protocol, host, normalizedPort);
+    void refreshLatency(protocol, host, normalizedPort);
+    const lastConfig = { protocol, host, port: normalizedPort, username, rememberPassword };
     if (rememberPassword) {
       lastConfig.password = password;
     }
@@ -128,12 +134,14 @@ disconnectBtn.addEventListener("click", async () => {
 saveBtn.addEventListener("click", async () => {
   const host = hostInput.value.trim();
   const port = portInput.value.trim();
+  const normalizedPort = normalizePort(port);
   const protocol = protocolInput.value;
   const username = usernameInput.value.trim();
   const password = passwordInput.value;
   const rememberPassword = rememberPasswordInput.checked;
 
-  if (!host || !port) return showError("Enter host and port to save.");
+  if (!host) return showError("Enter host to save.");
+  if (normalizedPort == null) return showError("Enter a valid port (1–65535) to save.");
   hideError();
 
   const data = await storageGet("savedProxies");
@@ -145,14 +153,14 @@ saveBtn.addEventListener("click", async () => {
 
   // Avoid duplicates by protocol + host:port
   const exists = list.find(
-    (p) => (p.protocol || "socks5") === protocol && p.host === host && p.port === Number(port)
+    (p) => (p.protocol || "socks5") === protocol && p.host === host && p.port === normalizedPort
   );
   if (exists) return showError("This proxy is already saved.");
 
   const savedProxy = {
     protocol,
     host,
-    port: Number(port),
+    port: normalizedPort,
     username,
     rememberPassword,
     id: Date.now(),
@@ -297,8 +305,28 @@ function storageSet(data) {
   return new Promise((resolve) => chrome.storage.local.set(data, resolve));
 }
 
+function normalizePort(value) {
+  const asString = typeof value === "string" ? value.trim() : String(value || "").trim();
+  if (!/^\d+$/.test(asString)) {
+    return null;
+  }
+
+  const port = Number(asString);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    return null;
+  }
+
+  return port;
+}
+
 async function refreshLatency(protocol, host, port) {
+  const requestId = ++latencyRequestId;
   const latencyResult = await sendMessage({ action: "getProxyLatency" });
+
+  if (!isConnectedState || requestId !== latencyRequestId) {
+    return;
+  }
+
   if (latencyResult.success && Number.isInteger(latencyResult.latencyMs)) {
     setConnectedUI(protocol, host, port, latencyResult.latencyMs);
     return;

@@ -1,6 +1,45 @@
 // Service worker for proxy configuration and authentication.
 
 let proxyCredentials = null;
+const SESSION_CREDENTIALS_KEY = "sessionProxyCredentials";
+
+async function setSessionCredentials(credentials) {
+  await chrome.storage.session.set({ [SESSION_CREDENTIALS_KEY]: credentials });
+}
+
+async function clearSessionCredentials() {
+  await chrome.storage.session.remove(SESSION_CREDENTIALS_KEY);
+}
+
+async function getActiveProxyCredentials() {
+  if (proxyCredentials?.username) {
+    return proxyCredentials;
+  }
+
+  const sessionData = await chrome.storage.session.get(SESSION_CREDENTIALS_KEY);
+  const sessionCredentials = sessionData?.[SESSION_CREDENTIALS_KEY] || null;
+  if (sessionCredentials?.username) {
+    proxyCredentials = {
+      username: sessionCredentials.username,
+      password: sessionCredentials.password || "",
+    };
+    return proxyCredentials;
+  }
+
+  const localData = await chrome.storage.local.get("proxyConfig");
+  const localConfig = localData?.proxyConfig;
+  const hasSavedPassword = localConfig && Object.prototype.hasOwnProperty.call(localConfig, "password");
+
+  if (localConfig?.username && hasSavedPassword) {
+    proxyCredentials = {
+      username: localConfig.username,
+      password: localConfig.password || "",
+    };
+    return proxyCredentials;
+  }
+
+  return null;
+}
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "setProxy") {
@@ -42,7 +81,7 @@ async function applyProxy(config) {
   const { protocol, host, port, username, password, rememberPassword } = config;
 
   const normalizedHost = typeof host === "string" ? host.trim() : "";
-  const normalizedPort = Number.parseInt(port, 10);
+  const normalizedPort = normalizePort(port);
   const normalizedProtocol = typeof protocol === "string" ? protocol.toLowerCase().trim() : "socks5";
   const normalizedRememberPassword = Boolean(rememberPassword);
   const supportedProtocols = ["socks5", "http", "https"];
@@ -50,19 +89,19 @@ async function applyProxy(config) {
 
   if (
     !normalizedHost ||
-    !Number.isInteger(normalizedPort) ||
-    normalizedPort < 1 ||
-    normalizedPort > 65535 ||
+    normalizedPort == null ||
     !supportedProtocols.includes(normalizedProtocol)
   ) {
     throw new Error("Host and port are required");
   }
 
-  // Cache credentials for proxy auth challenges.
+  // Cache credentials and persist them in session storage so auth survives worker sleep.
   if (username && hasPassword) {
     proxyCredentials = { username, password: password || "" };
+    await setSessionCredentials(proxyCredentials);
   } else {
     proxyCredentials = null;
+    await clearSessionCredentials();
   }
 
   const proxyConfig = {
@@ -101,9 +140,32 @@ async function applyProxy(config) {
   });
 }
 
+function normalizePort(value) {
+  if (Number.isInteger(value) && value >= 1 && value <= 65535) {
+    return value;
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const asString = value.trim();
+  if (!/^\d+$/.test(asString)) {
+    return null;
+  }
+
+  const port = Number(asString);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    return null;
+  }
+
+  return port;
+}
+
 // Reset browser proxy settings.
 async function clearProxy() {
   proxyCredentials = null;
+  await clearSessionCredentials();
 
   await chrome.proxy.settings.clear({ scope: "regular" });
   await chrome.storage.local.set({ proxyEnabled: false });
@@ -124,20 +186,26 @@ async function getProxyStatus() {
 // Respond to proxy auth challenges.
 chrome.webRequest.onAuthRequired.addListener(
   (details, callback) => {
-    if (
-      details.isProxy &&
-      proxyCredentials &&
-      proxyCredentials.username
-    ) {
-      callback({
-        authCredentials: {
-          username: proxyCredentials.username,
-          password: proxyCredentials.password,
-        },
-      });
-    } else {
+    if (!details.isProxy) {
       callback({});
+      return;
     }
+
+    getActiveProxyCredentials()
+      .then((credentials) => {
+        if (credentials?.username) {
+          callback({
+            authCredentials: {
+              username: credentials.username,
+              password: credentials.password || "",
+            },
+          });
+          return;
+        }
+
+        callback({});
+      })
+      .catch(() => callback({}));
   },
   { urls: ["<all_urls>"] },
   ["asyncBlocking"]
@@ -146,6 +214,13 @@ chrome.webRequest.onAuthRequired.addListener(
 // Restore the saved proxy on startup.
 chrome.storage.local.get(["proxyConfig", "proxyEnabled"], async (data) => {
   if (data.proxyEnabled && data.proxyConfig) {
+    const hasSavedPassword = Object.prototype.hasOwnProperty.call(data.proxyConfig, "password");
+    if (data.proxyConfig.username && !hasSavedPassword) {
+      await clearProxy();
+      console.warn("[Proxy Manager] Skipped restoring auth proxy without saved password");
+      return;
+    }
+
     try {
       await applyProxy(data.proxyConfig);
       console.log("[Proxy Manager] Restored proxy settings on startup");
