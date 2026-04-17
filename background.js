@@ -207,7 +207,14 @@ chrome.webRequest.onAuthRequired.addListener(
       })
       .catch(() => callback({}));
   },
-  { urls: ["<all_urls>"] },
+  {
+    urls: [
+      "http://*/*",
+      "https://*/*",
+      "ws://*/*",
+      "wss://*/*",
+    ],
+  },
   ["asyncBlocking"]
 );
 
