@@ -11,6 +11,7 @@ const statusBadge = document.getElementById("statusBadge");
 const statusBar = document.getElementById("statusBar");
 const statusText = document.getElementById("statusText");
 const errorMsg = document.getElementById("errorMsg");
+const authSection = document.getElementById("authSection");
 const togglePassword = document.getElementById("togglePassword");
 const savedSection = document.getElementById("savedSection");
 const savedList = document.getElementById("savedList");
@@ -359,6 +360,8 @@ function normalizePort(value) {
 
 function updateAuthInputsState() {
   const isSocks5 = protocolInput.value === "socks5";
+
+  authSection.style.display = isSocks5 ? "none" : "";
 
   usernameInput.disabled = isSocks5;
   passwordInput.disabled = isSocks5;

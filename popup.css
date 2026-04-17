@@ -133,6 +133,12 @@ body {
   gap: 10px;
 }
 
+#authSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .form-row {
   display: flex;
   gap: 8px;

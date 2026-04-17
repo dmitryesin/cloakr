@@ -63,44 +63,46 @@
           </div>
         </div>
 
-        <div class="divider">
-          <span>Authentication <span class="optional">(optional)</span></span>
-        </div>
+        <div id="authSection">
+          <div class="divider">
+            <span>Authentication <span class="optional">(optional)</span></span>
+          </div>
 
-        <div class="form-group">
-          <label class="label" for="username">Username</label>
-          <input
-            type="text"
-            id="username"
-            class="input"
-            placeholder="Optional"
-            autocomplete="off"
-          />
-        </div>
-
-        <div class="form-group">
-          <label class="label" for="password">Password</label>
-          <div class="password-wrapper">
+          <div class="form-group">
+            <label class="label" for="username">Username</label>
             <input
-              type="password"
-              id="password"
+              type="text"
+              id="username"
               class="input"
               placeholder="Optional"
               autocomplete="off"
             />
-            <button id="togglePassword" class="toggle-password" type="button" title="Show or hide password">
-              <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            </button>
           </div>
-        </div>
 
-        <label class="remember-password" for="rememberPassword">
-          <input type="checkbox" id="rememberPassword" />
-          <span>Store password on this device</span>
-        </label>
+          <div class="form-group">
+            <label class="label" for="password">Password</label>
+            <div class="password-wrapper">
+              <input
+                type="password"
+                id="password"
+                class="input"
+                placeholder="Optional"
+                autocomplete="off"
+              />
+              <button id="togglePassword" class="toggle-password" type="button" title="Show or hide password">
+                <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <label class="remember-password" for="rememberPassword">
+            <input type="checkbox" id="rememberPassword" />
+            <span>Store password on this device</span>
+          </label>
+        </div>
 
         <label class="remember-password" for="latencyCheckEnabled">
           <input type="checkbox" id="latencyCheckEnabled" />
