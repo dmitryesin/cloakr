@@ -254,15 +254,15 @@ chrome.storage.local.get(["proxyConfig", "proxyEnabled"], async (data: any) => {
     const hasSavedPassword = Object.prototype.hasOwnProperty.call(storedConfig, "password");
     if (storedConfig.username && !hasSavedPassword) {
       await clearProxy();
-      console.warn("[Proxy Manager] Skipped restoring auth proxy without saved password");
+      console.warn("[Cloakr] Skipped restoring auth proxy without saved password");
       return;
     }
 
     try {
       await applyProxy(storedConfig);
-      console.log("[Proxy Manager] Restored proxy settings on startup");
+      console.log("[Cloakr] Restored proxy settings on startup");
     } catch (e) {
-      console.error("[Proxy Manager] Failed to restore settings:", e);
+      console.error("[Cloakr] Failed to restore settings:", e);
     }
   }
 });

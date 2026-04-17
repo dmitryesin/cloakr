@@ -2,7 +2,7 @@ import { defineConfig } from "wxt";
 
 export default defineConfig({
   manifest: {
-    name: "Proxy Manager",
+    name: "Cloakr",
     version: "1.0.0",
     description: "Easily manage SOCKS5, HTTP, and HTTPS proxy settings in Chrome",
     permissions: ["proxy", "storage", "tabs", "webRequest", "webRequestAuthProvider"],
