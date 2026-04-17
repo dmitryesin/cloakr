@@ -4,11 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Proxy Settings</title>
-    <link rel="stylesheet" href="popup.css" />
+    <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
     <div class="app">
-      <!-- Header -->
       <header class="header">
         <div class="header-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -21,13 +20,11 @@
         <div id="statusBadge" class="status-badge status-off">OFF</div>
       </header>
 
-      <!-- Status bar -->
       <div id="statusBar" class="status-bar status-bar--inactive">
         <div class="status-dot"></div>
         <span id="statusText">Proxy is off</span>
       </div>
 
-      <!-- Form -->
       <div class="form">
         <div class="form-group">
           <label class="label" for="protocol">Protocol</label>
@@ -104,13 +101,8 @@
           </label>
         </div>
 
-        <label class="remember-password" for="latencyCheckEnabled">
-          <input type="checkbox" id="latencyCheckEnabled" />
-          <span>Show latency in status</span>
-        </label>
       </div>
 
-      <!-- Saved proxies -->
       <div id="savedSection" class="saved-section" style="display:none">
         <div class="saved-header">
           <span>Saved configurations</span>
@@ -118,7 +110,6 @@
         <div id="savedList" class="saved-list"></div>
       </div>
 
-      <!-- Actions -->
       <div class="actions">
         <button id="saveBtn" class="btn btn--secondary" title="Save current configuration">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -138,10 +129,9 @@
         </button>
       </div>
 
-      <!-- Error message -->
       <div id="errorMsg" class="error-msg" style="display:none"></div>
     </div>
 
-    <script src="popup.js"></script>
+    <script type="module" src="./main.ts"></script>
   </body>
 </html>

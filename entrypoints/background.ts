@@ -1,23 +1,56 @@
+import { defineBackground } from "wxt/utils/define-background";
+
 // Service worker for proxy configuration and authentication.
 
-let proxyCredentials = null;
+declare const chrome: any;
+
+export default defineBackground(() => {
+
+type ProxyProtocol = "socks5" | "http" | "https";
+
+type ProxyConfig = {
+  protocol?: string;
+  host?: string;
+  port?: number | string;
+  username?: string;
+  password?: string;
+  rememberPassword?: boolean;
+};
+
+type ProxyCredentials = {
+  username: string;
+  password: string;
+};
+
+type ProxyStatus = {
+  enabled: boolean;
+  config: any;
+};
+
+type Message =
+  | { action: "setProxy"; config: ProxyConfig }
+  | { action: "clearProxy" }
+  | { action: "getStatus" }
+  | { action: "reloadCurrentTab" };
+
+let proxyCredentials: ProxyCredentials | null = null;
 const SESSION_CREDENTIALS_KEY = "sessionProxyCredentials";
 
-async function setSessionCredentials(credentials) {
+async function setSessionCredentials(credentials: ProxyCredentials): Promise<void> {
   await chrome.storage.session.set({ [SESSION_CREDENTIALS_KEY]: credentials });
 }
 
-async function clearSessionCredentials() {
+async function clearSessionCredentials(): Promise<void> {
   await chrome.storage.session.remove(SESSION_CREDENTIALS_KEY);
 }
 
-async function getActiveProxyCredentials() {
+async function getActiveProxyCredentials(): Promise<ProxyCredentials | null> {
   if (proxyCredentials?.username) {
     return proxyCredentials;
   }
 
   const sessionData = await chrome.storage.session.get(SESSION_CREDENTIALS_KEY);
-  const sessionCredentials = sessionData?.[SESSION_CREDENTIALS_KEY] || null;
+  const sessionCredentials = (sessionData?.[SESSION_CREDENTIALS_KEY] as ProxyCredentials | undefined) || null;
   if (sessionCredentials?.username) {
     proxyCredentials = {
       username: sessionCredentials.username,
@@ -27,8 +60,9 @@ async function getActiveProxyCredentials() {
   }
 
   const localData = await chrome.storage.local.get("proxyConfig");
-  const localConfig = localData?.proxyConfig;
-  const hasSavedPassword = localConfig && Object.prototype.hasOwnProperty.call(localConfig, "password");
+  const localConfig = localData?.proxyConfig as ProxyConfig | undefined;
+  const hasSavedPassword =
+    localConfig && Object.prototype.hasOwnProperty.call(localConfig, "password");
 
   if (localConfig?.username && hasSavedPassword) {
     proxyCredentials = {
@@ -41,18 +75,18 @@ async function getActiveProxyCredentials() {
   return null;
 }
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message: Message, _sender: any, sendResponse: any) => {
   if (message.action === "setProxy") {
     applyProxy(message.config)
       .then(() => sendResponse({ success: true }))
-      .catch((err) => sendResponse({ success: false, error: err.message }));
+      .catch((err: Error) => sendResponse({ success: false, error: err.message }));
     return true;
   }
 
   if (message.action === "clearProxy") {
     clearProxy()
       .then(() => sendResponse({ success: true }))
-      .catch((err) => sendResponse({ success: false, error: err.message }));
+      .catch((err: Error) => sendResponse({ success: false, error: err.message }));
     return true;
   }
 
@@ -64,33 +98,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "reloadCurrentTab") {
     reloadCurrentTab()
       .then(() => sendResponse({ success: true }))
-      .catch((err) => sendResponse({ success: false, error: err.message }));
+      .catch((err: Error) => sendResponse({ success: false, error: err.message }));
     return true;
   }
 
-  if (message.action === "getProxyLatency") {
-    measureProxyLatency()
-      .then((result) => sendResponse(result))
-      .catch((err) => sendResponse({ success: false, error: err.message }));
-    return true;
-  }
+  return false;
 });
 
 // Apply proxy settings.
-async function applyProxy(config) {
+async function applyProxy(config: ProxyConfig): Promise<void> {
   const { protocol, host, port, username, password, rememberPassword } = config;
 
   const normalizedHost = typeof host === "string" ? host.trim() : "";
   const normalizedPort = normalizePort(port);
-  const normalizedProtocol = typeof protocol === "string" ? protocol.toLowerCase().trim() : "socks5";
+  const normalizedProtocol =
+    typeof protocol === "string" ? protocol.toLowerCase().trim() : "socks5";
   const normalizedRememberPassword = Boolean(rememberPassword);
-  const supportedProtocols = ["socks5", "http", "https"];
+  const supportedProtocols: ProxyProtocol[] = ["socks5", "http", "https"];
   const hasPassword = Object.prototype.hasOwnProperty.call(config, "password");
 
   if (
     !normalizedHost ||
     normalizedPort == null ||
-    !supportedProtocols.includes(normalizedProtocol)
+    !supportedProtocols.includes(normalizedProtocol as ProxyProtocol)
   ) {
     throw new Error("Host and port are required");
   }
@@ -108,7 +138,7 @@ async function applyProxy(config) {
     mode: "fixed_servers",
     rules: {
       singleProxy: {
-        scheme: normalizedProtocol,
+        scheme: normalizedProtocol as ProxyProtocol,
         host: normalizedHost,
         port: normalizedPort,
       },
@@ -121,7 +151,7 @@ async function applyProxy(config) {
     scope: "regular",
   });
 
-  const persistedConfig = {
+  const persistedConfig: ProxyConfig = {
     protocol: normalizedProtocol,
     host: normalizedHost,
     port: normalizedPort,
@@ -140,9 +170,9 @@ async function applyProxy(config) {
   });
 }
 
-function normalizePort(value) {
-  if (Number.isInteger(value) && value >= 1 && value <= 65535) {
-    return value;
+function normalizePort(value: number | string | undefined): number | null {
+  if (Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 65535) {
+    return Number(value);
   }
 
   if (typeof value !== "string") {
@@ -163,7 +193,7 @@ function normalizePort(value) {
 }
 
 // Reset browser proxy settings.
-async function clearProxy() {
+async function clearProxy(): Promise<void> {
   proxyCredentials = null;
   await clearSessionCredentials();
 
@@ -171,9 +201,9 @@ async function clearProxy() {
   await chrome.storage.local.set({ proxyEnabled: false });
 }
 
-async function getProxyStatus() {
+async function getProxyStatus(): Promise<ProxyStatus> {
   return new Promise((resolve) => {
-    chrome.proxy.settings.get({ incognito: false }, (details) => {
+    chrome.proxy.settings.get({ incognito: false }, (details: any) => {
       const enabled = details?.value?.mode === "fixed_servers";
       resolve({
         enabled,
@@ -184,52 +214,52 @@ async function getProxyStatus() {
 }
 
 // Respond to proxy auth challenges.
-chrome.webRequest.onAuthRequired.addListener(
-  (details, callback) => {
-    if (!details.isProxy) {
-      callback({});
-      return;
-    }
-
-    getActiveProxyCredentials()
-      .then((credentials) => {
-        if (credentials?.username) {
-          callback({
-            authCredentials: {
-              username: credentials.username,
-              password: credentials.password || "",
-            },
-          });
-          return;
-        }
-
+try {
+  chrome.webRequest.onAuthRequired.addListener(
+    (details: any, callback: any) => {
+      if (!details.isProxy) {
         callback({});
-      })
-      .catch(() => callback({}));
-  },
-  {
-    urls: [
-      "http://*/*",
-      "https://*/*",
-      "ws://*/*",
-      "wss://*/*",
-    ],
-  },
-  ["asyncBlocking"]
-);
+        return;
+      }
+
+      getActiveProxyCredentials()
+        .then((credentials) => {
+          if (credentials?.username) {
+            callback({
+              authCredentials: {
+                username: credentials.username,
+                password: credentials.password || "",
+              },
+            });
+            return;
+          }
+
+          callback({});
+        })
+        .catch(() => callback({}));
+    },
+    {
+      urls: ["http://*/*", "https://*/*", "ws://*/*", "wss://*/*"],
+    },
+    ["asyncBlocking"]
+  );
+} catch {
+  // WXT build-time fake browser does not implement this API.
+}
 
 // Restore the saved proxy on startup.
-chrome.storage.local.get(["proxyConfig", "proxyEnabled"], async (data) => {
-  if (data.proxyEnabled && data.proxyConfig) {
-    const hasSavedPassword = Object.prototype.hasOwnProperty.call(data.proxyConfig, "password");
-    if (data.proxyConfig.username && !hasSavedPassword) {
+chrome.storage.local.get(["proxyConfig", "proxyEnabled"], async (data: any) => {
+  const storedConfig = data.proxyConfig as ProxyConfig | undefined;
+  if (data.proxyEnabled && storedConfig) {
+    const hasSavedPassword = Object.prototype.hasOwnProperty.call(storedConfig, "password");
+    if (storedConfig.username && !hasSavedPassword) {
       await clearProxy();
       console.warn("[Proxy Manager] Skipped restoring auth proxy without saved password");
       return;
     }
 
     try {
-      await applyProxy(data.proxyConfig);
+      await applyProxy(storedConfig);
       console.log("[Proxy Manager] Restored proxy settings on startup");
     } catch (e) {
       console.error("[Proxy Manager] Failed to restore settings:", e);
@@ -237,7 +267,7 @@ chrome.storage.local.get(["proxyConfig", "proxyEnabled"], async (data) => {
   }
 });
 
-async function reloadCurrentTab() {
+async function reloadCurrentTab(): Promise<void> {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   const activeTab = tabs[0];
 
@@ -245,71 +275,9 @@ async function reloadCurrentTab() {
     return;
   }
 
-  await new Promise((resolve) => {
+  await new Promise<void>((resolve) => {
     chrome.tabs.reload(activeTab.id, {}, () => resolve());
   });
 }
 
-const LATENCY_TEST_URLS = [
-  "https://www.gstatic.com/generate_204",
-  "https://www.google.com/generate_204",
-];
-
-async function probeLatency(url, timeoutMs) {
-  const startedAt = performance.now();
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(url, {
-      method: "GET",
-      cache: "no-store",
-      signal: controller.signal,
-    });
-
-    if (response.status === 204) {
-      return {
-        success: true,
-        latencyMs: Math.round(performance.now() - startedAt),
-      };
-    }
-
-    if (response.status === 407) {
-      return { success: false, reason: "proxy_auth_required" };
-    }
-
-    return { success: false, reason: `http_${response.status}` };
-  } catch (error) {
-    if (error?.name === "AbortError") {
-      return { success: false, reason: "timeout" };
-    }
-
-    return { success: false, reason: "network_error" };
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
-async function measureProxyLatency() {
-  const status = await getProxyStatus();
-  if (!status.enabled) {
-    return { success: false, error: "Proxy is not enabled" };
-  }
-
-  let lastFailure = { success: false, reason: "network_error" };
-  for (const url of LATENCY_TEST_URLS) {
-    const result = await probeLatency(url, 3000);
-    if (result.success) {
-      return result;
-    }
-
-    // This is a definitive proxy-side failure and should not be masked by fallback endpoints.
-    if (result.reason === "proxy_auth_required") {
-      return result;
-    }
-
-    lastFailure = result;
-  }
-
-  return lastFailure;
-}
+});
