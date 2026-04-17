@@ -28,6 +28,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   void loadSavedProxies();
   void refreshStatus();
   void loadLastConfig();
+  updateAuthInputsState();
+});
+
+protocolInput.addEventListener("change", () => {
+  updateAuthInputsState();
 });
 
 // Status.
@@ -81,9 +86,10 @@ connectBtn.addEventListener("click", async () => {
   const port = portInput.value.trim();
   const normalizedPort = normalizePort(port);
   const protocol = protocolInput.value;
-  const username = usernameInput.value.trim();
-  const password = passwordInput.value;
-  const rememberPassword = rememberPasswordInput.checked;
+  const isSocks5 = protocol === "socks5";
+  const username = isSocks5 ? "" : usernameInput.value.trim();
+  const password = isSocks5 ? "" : passwordInput.value;
+  const rememberPassword = isSocks5 ? false : rememberPasswordInput.checked;
 
   if (!host) return showError("Enter server address.");
   if (normalizedPort == null) return showError("Enter a valid port (1-65535).");
@@ -142,9 +148,10 @@ saveBtn.addEventListener("click", async () => {
   const port = portInput.value.trim();
   const normalizedPort = normalizePort(port);
   const protocol = protocolInput.value;
-  const username = usernameInput.value.trim();
-  const password = passwordInput.value;
-  const rememberPassword = rememberPasswordInput.checked;
+  const isSocks5 = protocol === "socks5";
+  const username = isSocks5 ? "" : usernameInput.value.trim();
+  const password = isSocks5 ? "" : passwordInput.value;
+  const rememberPassword = isSocks5 ? false : rememberPasswordInput.checked;
 
   if (!host) return showError("Enter server address before saving.");
   if (normalizedPort == null) return showError("Enter a valid port (1-65535) before saving.");
@@ -235,6 +242,7 @@ async function loadSavedProxies() {
       const isRemembered = Boolean(proxy.rememberPassword && proxy.password);
       rememberPasswordInput.checked = isRemembered;
       passwordInput.value = isRemembered ? proxy.password : "";
+      updateAuthInputsState();
     });
 
     delBtn.addEventListener("click", async (e) => {
@@ -265,6 +273,8 @@ async function loadLastConfig() {
     rememberPasswordInput.checked = isRemembered;
     passwordInput.value = isRemembered ? password : "";
   }
+
+  updateAuthInputsState();
 }
 
 // Password visibility toggle.
@@ -345,6 +355,19 @@ function normalizePort(value) {
   }
 
   return port;
+}
+
+function updateAuthInputsState() {
+  const isSocks5 = protocolInput.value === "socks5";
+
+  usernameInput.disabled = isSocks5;
+  passwordInput.disabled = isSocks5;
+  togglePassword.disabled = isSocks5;
+  rememberPasswordInput.disabled = isSocks5;
+
+  if (isSocks5) {
+    rememberPasswordInput.checked = false;
+  }
 }
 
 async function refreshLatency(protocol, host, port) {
