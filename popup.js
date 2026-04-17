@@ -51,7 +51,7 @@ async function refreshStatus() {
 }
 
 function setConnectedUI(protocol, host, port, latencyDisplay = null) {
-  const protocolLabel = (protocol || "socks5").toUpperCase();
+  const protocolLabel = (protocol || "http").toUpperCase();
   const latencyLabel = Number.isInteger(latencyDisplay)
     ? ` | ${latencyDisplay} ms`
     : typeof latencyDisplay === "string" && latencyDisplay
@@ -166,7 +166,7 @@ saveBtn.addEventListener("click", async () => {
 
   // Avoid duplicates by protocol + host:port
   const exists = list.find(
-    (p) => (p.protocol || "socks5") === protocol && p.host === host && p.port === normalizedPort
+    (p) => (p.protocol || "http") === protocol && p.host === host && p.port === normalizedPort
   );
   if (exists) return showError("This configuration is already saved.");
 
@@ -218,7 +218,7 @@ async function loadSavedProxies() {
 
     const nameEl = document.createElement("span");
     nameEl.className = "saved-item-name";
-    const proxyProtocol = (proxy.protocol || "socks5").toUpperCase();
+    const proxyProtocol = (proxy.protocol || "http").toUpperCase();
     const hostLabel = proxy.username ? `${proxy.username}@${proxy.host}` : proxy.host;
     nameEl.textContent = `${proxyProtocol} ${hostLabel}`;
 
@@ -235,7 +235,7 @@ async function loadSavedProxies() {
 
     item.addEventListener("click", (e) => {
       if (e.target.closest(".saved-item-delete")) return;
-      protocolInput.value = proxy.protocol || "socks5";
+      protocolInput.value = proxy.protocol || "http";
       hostInput.value = proxy.host;
       portInput.value = proxy.port;
       usernameInput.value = proxy.username || "";
@@ -265,7 +265,7 @@ async function loadLastConfig() {
   const data = await storageGet("lastConfig");
   if (data.lastConfig) {
     const { protocol, host, port, username, rememberPassword, password } = data.lastConfig;
-    protocolInput.value = protocol || "socks5";
+    protocolInput.value = protocol || "http";
     if (!hostInput.value) hostInput.value = host || "";
     if (!portInput.value) portInput.value = port || "";
     if (!usernameInput.value) usernameInput.value = username || "";
