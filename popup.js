@@ -261,8 +261,9 @@ async function loadLastConfig() {
     if (!hostInput.value) hostInput.value = host || "";
     if (!portInput.value) portInput.value = port || "";
     if (!usernameInput.value) usernameInput.value = username || "";
-    rememberPasswordInput.checked = Boolean(rememberPassword && password);
-    passwordInput.value = rememberPassword ? password || "" : "";
+    const isRemembered = Boolean(rememberPassword && password);
+    rememberPasswordInput.checked = isRemembered;
+    passwordInput.value = isRemembered ? password : "";
   }
 }
 
