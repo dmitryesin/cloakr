@@ -101,7 +101,9 @@ connectBtn.addEventListener("click", async () => {
 
   if (result.success) {
     setConnectedUI(protocol, host, normalizedPort);
-    void refreshLatency(protocol, host, normalizedPort);
+    if (isLatencyCheckEnabled) {
+      void refreshLatency(protocol, host, normalizedPort);
+    }
     const lastConfig = { protocol, host, port: normalizedPort, username, rememberPassword };
     if (rememberPassword) {
       lastConfig.password = password;
@@ -345,6 +347,10 @@ function normalizePort(value) {
 }
 
 async function refreshLatency(protocol, host, port) {
+  if (!isConnectedState || !isLatencyCheckEnabled) {
+    return;
+  }
+
   const requestId = ++latencyRequestId;
   const latencyResult = await sendMessage({ action: "getProxyLatency" });
 
