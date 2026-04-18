@@ -4,7 +4,14 @@ declare const chrome: any;
 
 const hostInput = document.getElementById("host") as HTMLInputElement;
 const portInput = document.getElementById("port") as HTMLInputElement;
-const protocolInput = document.getElementById("protocol") as HTMLSelectElement;
+const protocolInput = document.getElementById("protocol") as HTMLInputElement;
+const protocolSelect = document.getElementById("protocolSelect") as HTMLDivElement;
+const protocolTrigger = document.getElementById("protocolTrigger") as HTMLButtonElement;
+const protocolMenu = document.getElementById("protocolMenu") as HTMLDivElement;
+const protocolLabel = document.getElementById("protocolLabel") as HTMLSpanElement;
+const protocolOptions = Array.from(
+  document.querySelectorAll(".protocol-option")
+) as HTMLButtonElement[];
 const usernameInput = document.getElementById("username") as HTMLInputElement;
 const passwordInput = document.getElementById("password") as HTMLInputElement;
 const rememberPasswordInput = document.getElementById("rememberPassword") as HTMLInputElement;
@@ -21,6 +28,11 @@ const savedSection = document.getElementById("savedSection") as HTMLDivElement;
 const savedList = document.getElementById("savedList") as HTMLDivElement;
 
 const MAX_SAVED_PROXIES = 30;
+const PROTOCOL_LABELS: Record<ProxyProtocol, string> = {
+  http: "HTTP",
+  https: "HTTPS",
+  socks5: "SOCKS5",
+};
 
 type ProxyProtocol = "http" | "https" | "socks5";
 
@@ -51,13 +63,10 @@ type MessageResponse = {
 
 // Initialization.
 document.addEventListener("DOMContentLoaded", async () => {
+  initProtocolSelect();
   void loadSavedProxies();
   void refreshStatus();
   void loadLastConfig();
-  updateAuthInputsState();
-});
-
-protocolInput.addEventListener("change", () => {
   updateAuthInputsState();
 });
 
@@ -201,15 +210,6 @@ saveBtn.addEventListener("click", async () => {
   list.push(savedProxy);
   await storageSet({ savedProxies: list });
 
-  saveBtn.textContent = "Saved";
-  setTimeout(() => {
-    saveBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-      <polyline points="17 21 17 13 7 13 7 21"/>
-      <polyline points="7 3 7 8 15 8"/>
-    </svg> Save preset`;
-  }, 1200);
-
   await loadSavedProxies();
 });
 
@@ -224,7 +224,7 @@ async function loadSavedProxies(): Promise<void> {
   }
 
   savedSection.style.display = "";
-  savedList.innerHTML = "";
+  savedList.replaceChildren();
 
   list.forEach((proxy) => {
     const item = document.createElement("div");
@@ -243,13 +243,11 @@ async function loadSavedProxies(): Promise<void> {
     const delBtn = document.createElement("button");
     delBtn.className = "saved-item-delete";
     delBtn.title = "Remove";
-    delBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-    </svg>`;
+    delBtn.appendChild(createDeleteIcon());
 
     item.addEventListener("click", (e) => {
       if ((e.target as HTMLElement).closest(".saved-item-delete")) return;
-      protocolInput.value = proxy.protocol || "http";
+      syncProtocolSelect(proxy.protocol || "http");
       hostInput.value = proxy.host;
       portInput.value = String(proxy.port);
       usernameInput.value = proxy.username || "";
@@ -279,7 +277,7 @@ async function loadLastConfig(): Promise<void> {
   const lastConfig = data.lastConfig as ProxyConfig | undefined;
   if (lastConfig) {
     const { protocol, host, port, username, rememberPassword, password } = lastConfig;
-    protocolInput.value = protocol || "http";
+    syncProtocolSelect(protocol || "http");
     if (!hostInput.value) hostInput.value = host || "";
     if (!portInput.value) portInput.value = String(port || "");
     if (!usernameInput.value) usernameInput.value = username || "";
@@ -298,15 +296,147 @@ togglePassword.addEventListener("click", () => {
   const icon = togglePassword.querySelector("svg");
   if (!icon) return;
 
-  icon.innerHTML = isPassword
-    ? `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-       <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-       <line x1="1" y1="1" x2="23" y2="23"/>`
-    : `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-       <circle cx="12" cy="12" r="3"/>`;
+  setPasswordToggleIcon(icon, isPassword);
 });
 
 // Helpers.
+function initProtocolSelect(): void {
+  const initialProtocol = isProxyProtocol(protocolInput.value) ? protocolInput.value : "http";
+  syncProtocolSelect(initialProtocol);
+
+  protocolTrigger.addEventListener("click", () => {
+    toggleProtocolMenu();
+  });
+
+  protocolOptions.forEach((option) => {
+    option.addEventListener("click", () => {
+      const protocol = option.dataset.protocol;
+      if (!isProxyProtocol(protocol)) {
+        return;
+      }
+
+      syncProtocolSelect(protocol);
+      closeProtocolMenu();
+      updateAuthInputsState();
+    });
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!protocolSelect.contains(event.target as Node)) {
+      closeProtocolMenu();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeProtocolMenu();
+    }
+  });
+
+  protocolTrigger.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openProtocolMenu();
+    }
+  });
+}
+
+function syncProtocolSelect(protocol: ProxyProtocol): void {
+  protocolInput.value = protocol;
+  protocolLabel.textContent = PROTOCOL_LABELS[protocol];
+
+  protocolOptions.forEach((option) => {
+    const isSelected = option.dataset.protocol === protocol;
+    option.classList.toggle("is-selected", isSelected);
+    option.setAttribute("aria-selected", isSelected ? "true" : "false");
+  });
+}
+
+function openProtocolMenu(): void {
+  protocolSelect.classList.add("is-open");
+  protocolMenu.hidden = false;
+  protocolTrigger.setAttribute("aria-expanded", "true");
+}
+
+function closeProtocolMenu(): void {
+  protocolSelect.classList.remove("is-open");
+  protocolMenu.hidden = true;
+  protocolTrigger.setAttribute("aria-expanded", "false");
+}
+
+function toggleProtocolMenu(): void {
+  if (protocolMenu.hidden) {
+    openProtocolMenu();
+    return;
+  }
+
+  closeProtocolMenu();
+}
+
+function isProxyProtocol(value: string | undefined): value is ProxyProtocol {
+  return value === "http" || value === "https" || value === "socks5";
+}
+
+function createSavePresetIcon(): SVGSVGElement {
+  const svg = createSvgElement("svg", {
+    width: "14",
+    height: "14",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    "stroke-width": "2",
+  }) as SVGSVGElement;
+
+  svg.appendChild(
+    createSvgElement("path", { d: "M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" })
+  );
+  svg.appendChild(createSvgElement("polyline", { points: "17 21 17 13 7 13 7 21" }));
+  svg.appendChild(createSvgElement("polyline", { points: "7 3 7 8 15 8" }));
+  return svg;
+}
+
+function createDeleteIcon(): SVGSVGElement {
+  const svg = createSvgElement("svg", {
+    width: "12",
+    height: "12",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    "stroke-width": "2.5",
+  }) as SVGSVGElement;
+
+  svg.appendChild(createSvgElement("line", { x1: "18", y1: "6", x2: "6", y2: "18" }));
+  svg.appendChild(createSvgElement("line", { x1: "6", y1: "6", x2: "18", y2: "18" }));
+  return svg;
+}
+
+function setPasswordToggleIcon(icon: SVGElement, showMaskedIcon: boolean): void {
+  const nextNodes = showMaskedIcon
+    ? [
+        createSvgElement("path", {
+          d: "M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94",
+        }),
+        createSvgElement("path", {
+          d: "M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19",
+        }),
+        createSvgElement("line", { x1: "1", y1: "1", x2: "23", y2: "23" }),
+      ]
+    : [
+        createSvgElement("path", { d: "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" }),
+        createSvgElement("circle", { cx: "12", cy: "12", r: "3" }),
+      ];
+
+  icon.replaceChildren(...nextNodes);
+}
+
+function createSvgElement(name: string, attrs: Record<string, string>): SVGElement {
+  const element = document.createElementNS("http://www.w3.org/2000/svg", name);
+  Object.entries(attrs).forEach(([key, value]) => {
+    element.setAttribute(key, value);
+  });
+  return element;
+}
+
 function showError(msg: string): void {
   errorMsg.textContent = msg;
   errorMsg.style.display = "block";

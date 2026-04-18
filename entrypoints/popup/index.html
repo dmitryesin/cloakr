@@ -23,12 +23,28 @@
 
       <div class="form">
         <div class="form-group">
-          <label class="label" for="protocol">Protocol</label>
-          <select id="protocol" class="input">
-            <option value="http" selected>HTTP</option>
-            <option value="https">HTTPS</option>
-            <option value="socks5">SOCKS5</option>
-          </select>
+          <label class="label" for="protocolTrigger">Protocol</label>
+          <div id="protocolSelect" class="protocol-select">
+            <input type="hidden" id="protocol" value="http" />
+            <button
+              id="protocolTrigger"
+              class="input protocol-trigger"
+              type="button"
+              aria-haspopup="listbox"
+              aria-controls="protocolMenu"
+              aria-expanded="false"
+            >
+              <span id="protocolLabel">HTTP</span>
+              <svg class="protocol-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            <div id="protocolMenu" class="protocol-menu" role="listbox" aria-labelledby="protocolTrigger" hidden>
+              <button type="button" class="protocol-option is-selected" data-protocol="http" role="option" aria-selected="true">HTTP</button>
+              <button type="button" class="protocol-option" data-protocol="https" role="option" aria-selected="false">HTTPS</button>
+              <button type="button" class="protocol-option" data-protocol="socks5" role="option" aria-selected="false">SOCKS5</button>
+            </div>
+          </div>
         </div>
 
         <div class="form-row">

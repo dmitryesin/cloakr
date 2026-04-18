@@ -191,6 +191,88 @@ body {
   color: #80868b;
 }
 
+.protocol-select {
+  position: relative;
+}
+
+.protocol-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  text-align: left;
+}
+
+.protocol-trigger:focus-visible,
+.protocol-select.is-open .protocol-trigger {
+  border-color: var(--chrome-blue);
+  box-shadow: 0 0 0 3px var(--chrome-blue-focus);
+}
+
+.protocol-chevron {
+  color: var(--chrome-text-muted);
+  transition: transform 0.16s ease;
+}
+
+.protocol-select.is-open .protocol-chevron {
+  transform: rotate(180deg);
+}
+
+.protocol-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px;
+  background: var(--chrome-bg);
+  border: 1px solid var(--chrome-border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 18px rgba(32, 33, 36, 0.14);
+}
+
+.protocol-menu[hidden] {
+  display: none;
+}
+
+.protocol-option {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--chrome-text);
+  text-align: left;
+  font-size: 12px;
+  font-family: var(--font);
+  font-weight: 500;
+  padding: 7px 8px;
+  cursor: pointer;
+}
+
+.protocol-option:hover {
+  background: var(--chrome-surface-hover);
+}
+
+.protocol-option.is-selected {
+  background: var(--chrome-surface);
+  border-color: #d2e3fc;
+  color: var(--chrome-blue);
+  font-weight: 600;
+}
+
+.protocol-option.is-selected:hover {
+  background: #eef3fd;
+}
+
+.protocol-option:focus-visible {
+  outline: none;
+  border-color: var(--chrome-blue);
+  box-shadow: 0 0 0 2px var(--chrome-blue-focus);
+}
+
 .input[type="number"]::-webkit-inner-spin-button,
 .input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
