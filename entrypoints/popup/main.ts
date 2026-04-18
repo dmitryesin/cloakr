@@ -1,6 +1,14 @@
 export {};
 
-declare const chrome: any;
+import type {
+  ProxyConfig,
+  ProxyStatus,
+  RuntimeErrorResponse,
+  RuntimeMessage,
+  RuntimeMessageAction,
+  RuntimeMessageByAction,
+  RuntimeResponseByAction,
+} from "../shared/messages";
 
 const hostInput = document.getElementById("host") as HTMLInputElement;
 const portInput = document.getElementById("port") as HTMLInputElement;
@@ -36,7 +44,7 @@ const PROTOCOL_LABELS: Record<ProxyProtocol, string> = {
 
 type ProxyProtocol = "http" | "https" | "socks5";
 
-type ProxyConfig = {
+type SavedProxyConfig = {
   protocol?: ProxyProtocol;
   host: string;
   port: number;
@@ -44,21 +52,6 @@ type ProxyConfig = {
   password?: string;
   rememberPassword?: boolean;
   id?: number;
-};
-
-type GetStatusResponse = {
-  enabled: boolean;
-  config: {
-    scheme?: ProxyProtocol;
-    host?: string;
-    port?: number;
-  } | null;
-};
-
-type MessageResponse = {
-  success?: boolean;
-  error?: string;
-  reason?: string;
 };
 
 // Initialization.
@@ -72,7 +65,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // Status.
 async function refreshStatus(): Promise<void> {
-  const { enabled, config } = (await sendMessage({ action: "getStatus" })) as GetStatusResponse;
+  const statusResponse = await sendMessage({ action: "getStatus" });
+  if (isRuntimeError(statusResponse)) {
+    setDisconnectedUI();
+    return;
+  }
+
+  const { enabled, config } = statusResponse as ProxyStatus;
 
   if (enabled && config) {
     setConnectedUI(config.scheme, config.host, config.port);
@@ -123,17 +122,17 @@ connectBtn.addEventListener("click", async () => {
   connectBtn.textContent = "Turning on...";
   connectBtn.disabled = true;
 
-  const result = (await sendMessage({
+  const result = await sendMessage({
     action: "setProxy",
     config: { protocol, host, port: normalizedPort, username, password, rememberPassword },
-  })) as MessageResponse;
+  });
 
   connectBtn.textContent = "Turn on";
   connectBtn.disabled = false;
 
-  if (result.success) {
+  if (!isRuntimeError(result)) {
     setConnectedUI(protocol, host, normalizedPort);
-    const lastConfig: ProxyConfig = { protocol, host, port: normalizedPort, username, rememberPassword };
+    const lastConfig: SavedProxyConfig = { protocol, host, port: normalizedPort, username, rememberPassword };
     if (rememberPassword) {
       lastConfig.password = password;
     }
@@ -148,9 +147,9 @@ disconnectBtn.addEventListener("click", async () => {
   disconnectBtn.textContent = "Turning off...";
   disconnectBtn.disabled = true;
 
-  const result = (await sendMessage({ action: "clearProxy" })) as MessageResponse;
+  const result = await sendMessage({ action: "clearProxy" });
 
-  if (!result.success) {
+  if (isRuntimeError(result)) {
     disconnectBtn.textContent = "Turn off";
     disconnectBtn.disabled = false;
     showError(result.error || "Could not turn off proxy.");
@@ -180,7 +179,7 @@ saveBtn.addEventListener("click", async () => {
   hideError();
 
   const data = await storageGet("savedProxies");
-  const list = (data.savedProxies as ProxyConfig[] | undefined) || [];
+  const list = (data.savedProxies as SavedProxyConfig[] | undefined) || [];
 
   if (list.length >= MAX_SAVED_PROXIES) {
     return showError(
@@ -194,7 +193,7 @@ saveBtn.addEventListener("click", async () => {
   );
   if (exists) return showError("This configuration is already saved.");
 
-  const savedProxy: ProxyConfig = {
+  const savedProxy: SavedProxyConfig = {
     protocol,
     host,
     port: normalizedPort,
@@ -216,7 +215,7 @@ saveBtn.addEventListener("click", async () => {
 // Saved proxies list.
 async function loadSavedProxies(): Promise<void> {
   const data = await storageGet("savedProxies");
-  const list = (data.savedProxies as ProxyConfig[] | undefined) || [];
+  const list = (data.savedProxies as SavedProxyConfig[] | undefined) || [];
 
   if (list.length === 0) {
     savedSection.style.display = "none";
@@ -274,7 +273,7 @@ async function loadSavedProxies(): Promise<void> {
 // Restore last config.
 async function loadLastConfig(): Promise<void> {
   const data = await storageGet("lastConfig");
-  const lastConfig = data.lastConfig as ProxyConfig | undefined;
+  const lastConfig = data.lastConfig as SavedProxyConfig | undefined;
   if (lastConfig) {
     const { protocol, host, port, username, rememberPassword, password } = lastConfig;
     syncProtocolSelect(protocol || "http");
@@ -377,24 +376,6 @@ function isProxyProtocol(value: string | undefined): value is ProxyProtocol {
   return value === "http" || value === "https" || value === "socks5";
 }
 
-function createSavePresetIcon(): SVGSVGElement {
-  const svg = createSvgElement("svg", {
-    width: "14",
-    height: "14",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    "stroke-width": "2",
-  }) as SVGSVGElement;
-
-  svg.appendChild(
-    createSvgElement("path", { d: "M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" })
-  );
-  svg.appendChild(createSvgElement("polyline", { points: "17 21 17 13 7 13 7 21" }));
-  svg.appendChild(createSvgElement("polyline", { points: "7 3 7 8 15 8" }));
-  return svg;
-}
-
 function createDeleteIcon(): SVGSVGElement {
   const svg = createSvgElement("svg", {
     width: "12",
@@ -446,21 +427,42 @@ function hideError(): void {
   errorMsg.style.display = "none";
 }
 
-function sendMessage(msg: unknown): Promise<unknown> {
+function sendMessage<A extends RuntimeMessageAction>(
+  message: RuntimeMessageByAction<A>
+): Promise<RuntimeResponseByAction<A>> {
   return new Promise((resolve) => {
-    chrome.runtime.sendMessage(msg, (response: any) => {
+    chrome.runtime.sendMessage(message as RuntimeMessage, (response: RuntimeResponseByAction<A> | undefined) => {
       if (chrome.runtime.lastError) {
-        resolve({ success: false, error: chrome.runtime.lastError.message });
+        resolve({
+          success: false,
+          error: chrome.runtime.lastError.message || "Message channel failed",
+        } as RuntimeResponseByAction<A>);
         return;
       }
 
-      resolve(response || {});
+      if (response) {
+        resolve(response);
+        return;
+      }
+
+      resolve({
+        success: false,
+        error: "No response from background",
+      } as RuntimeResponseByAction<A>);
     });
   });
 }
 
+function isRuntimeError(response: RuntimeErrorResponse | ProxyStatus | { success: true }): response is RuntimeErrorResponse {
+  return "success" in response && response.success === false;
+}
+
 function storageGet(keys: string | string[]): Promise<Record<string, unknown>> {
-  return new Promise((resolve) => chrome.storage.local.get(keys, resolve));
+  return new Promise((resolve) => {
+    chrome.storage.local.get(keys, (items) => {
+      resolve(items as Record<string, unknown>);
+    });
+  });
 }
 
 function storageSet(data: Record<string, unknown>): Promise<void> {

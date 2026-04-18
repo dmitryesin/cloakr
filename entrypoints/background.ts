@@ -1,37 +1,25 @@
 import { defineBackground } from "wxt/utils/define-background";
+import type {
+  ProxyConfig,
+  ProxyProtocol,
+  ProxyStatus,
+  RuntimeMessage,
+  RuntimeResponse,
+} from "./shared/messages";
 
 // Service worker for proxy configuration and authentication.
 
-declare const chrome: any;
-
 export default defineBackground(() => {
-
-type ProxyProtocol = "socks5" | "http" | "https";
-
-type ProxyConfig = {
-  protocol?: string;
-  host?: string;
-  port?: number | string;
-  username?: string;
-  password?: string;
-  rememberPassword?: boolean;
-};
 
 type ProxyCredentials = {
   username: string;
   password: string;
 };
 
-type ProxyStatus = {
-  enabled: boolean;
-  config: any;
+type StartupStorageData = {
+  proxyConfig?: ProxyConfig;
+  proxyEnabled?: boolean;
 };
-
-type Message =
-  | { action: "setProxy"; config: ProxyConfig }
-  | { action: "clearProxy" }
-  | { action: "getStatus" }
-  | { action: "reloadCurrentTab" };
 
 let proxyCredentials: ProxyCredentials | null = null;
 const SESSION_CREDENTIALS_KEY = "sessionProxyCredentials";
@@ -75,7 +63,11 @@ async function getActiveProxyCredentials(): Promise<ProxyCredentials | null> {
   return null;
 }
 
-chrome.runtime.onMessage.addListener((message: Message, _sender: any, sendResponse: any) => {
+chrome.runtime.onMessage.addListener((
+  message: RuntimeMessage,
+  _sender: chrome.runtime.MessageSender,
+  sendResponse: (response: RuntimeResponse) => void
+) => {
   if (message.action === "setProxy") {
     applyProxy(message.config)
       .then(() => sendResponse({ success: true }))
@@ -111,19 +103,20 @@ async function applyProxy(config: ProxyConfig): Promise<void> {
 
   const normalizedHost = typeof host === "string" ? host.trim() : "";
   const normalizedPort = normalizePort(port);
-  const normalizedProtocol =
+  const normalizedProtocolRaw =
     typeof protocol === "string" ? protocol.toLowerCase().trim() : "socks5";
   const normalizedRememberPassword = Boolean(rememberPassword);
-  const supportedProtocols: ProxyProtocol[] = ["socks5", "http", "https"];
   const hasPassword = Object.prototype.hasOwnProperty.call(config, "password");
 
   if (
     !normalizedHost ||
     normalizedPort == null ||
-    !supportedProtocols.includes(normalizedProtocol as ProxyProtocol)
+    !isProxyProtocol(normalizedProtocolRaw)
   ) {
     throw new Error("Host and port are required");
   }
+
+  const normalizedProtocol: ProxyProtocol = normalizedProtocolRaw;
 
   // Cache credentials and persist them in session storage so auth survives worker sleep.
   if (username && hasPassword) {
@@ -203,20 +196,38 @@ async function clearProxy(): Promise<void> {
 
 async function getProxyStatus(): Promise<ProxyStatus> {
   return new Promise((resolve) => {
-    chrome.proxy.settings.get({ incognito: false }, (details: any) => {
-      const enabled = details?.value?.mode === "fixed_servers";
-      resolve({
-        enabled,
-        config: details?.value?.rules?.singleProxy || null,
-      });
-    });
+    chrome.proxy.settings.get(
+      { incognito: false },
+      (details: chrome.types.ChromeSettingGetResult<chrome.proxy.ProxyConfig>) => {
+        const singleProxy = details?.value?.rules?.singleProxy;
+        const scheme = isProxyProtocol(singleProxy?.scheme) ? singleProxy?.scheme : undefined;
+        const enabled = details?.value?.mode === "fixed_servers";
+        resolve({
+          enabled,
+          config: singleProxy
+            ? {
+                scheme,
+                host: singleProxy.host,
+                port: singleProxy.port,
+              }
+            : null,
+        });
+      }
+    );
   });
 }
 
 // Respond to proxy auth challenges.
 try {
   chrome.webRequest.onAuthRequired.addListener(
-    (details: any, callback: any) => {
+    (
+      details: chrome.webRequest.WebAuthenticationChallengeDetails,
+      callback?: (response: chrome.webRequest.BlockingResponse) => void
+    ) => {
+      if (!callback) {
+        return;
+      }
+
       if (!details.isProxy) {
         callback({});
         return;
@@ -248,7 +259,7 @@ try {
 }
 
 // Restore the saved proxy on startup.
-chrome.storage.local.get(["proxyConfig", "proxyEnabled"], async (data: any) => {
+chrome.storage.local.get(["proxyConfig", "proxyEnabled"], async (data: StartupStorageData) => {
   const storedConfig = data.proxyConfig as ProxyConfig | undefined;
   if (data.proxyEnabled && storedConfig) {
     const hasSavedPassword = Object.prototype.hasOwnProperty.call(storedConfig, "password");
@@ -275,9 +286,15 @@ async function reloadCurrentTab(): Promise<void> {
     return;
   }
 
+  const tabId = activeTab.id;
+
   await new Promise<void>((resolve) => {
-    chrome.tabs.reload(activeTab.id, {}, () => resolve());
+    chrome.tabs.reload(tabId, {}, () => resolve());
   });
+}
+
+function isProxyProtocol(value: string | undefined): value is ProxyProtocol {
+  return value === "socks5" || value === "http" || value === "https";
 }
 
 });
