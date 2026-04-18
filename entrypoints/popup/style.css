@@ -75,6 +75,12 @@ body {
   border-color: rgba(217, 48, 37, 0.18);
 }
 
+.status-badge.status-error {
+  background: #fff1f0;
+  color: var(--chrome-danger);
+  border-color: rgba(217, 48, 37, 0.22);
+}
+
 .status-badge.status-on {
   background: var(--chrome-success-soft);
   color: var(--chrome-success);
@@ -100,6 +106,11 @@ body {
   background: var(--chrome-surface);
 }
 
+.status-bar--error {
+  background: #fff1f0;
+  color: #8a1f1a;
+}
+
 .status-dot {
   width: 8px;
   height: 8px;
@@ -112,6 +123,11 @@ body {
   background: var(--chrome-success);
   box-shadow: 0 0 0 3px rgba(24, 128, 56, 0.16);
   animation: pulse 1.8s infinite;
+}
+
+.status-bar--error .status-dot {
+  background: var(--chrome-danger);
+  box-shadow: 0 0 0 3px rgba(217, 48, 37, 0.14);
 }
 
 @keyframes pulse {
@@ -479,6 +495,19 @@ body {
 
 .btn--danger:hover {
   background: #f9dedc;
+  color: var(--chrome-danger-hover);
+}
+
+.btn--retry {
+  background: #fff1f0;
+  color: var(--chrome-danger);
+  border-color: rgba(217, 48, 37, 0.24);
+  flex: 1;
+  justify-content: center;
+}
+
+.btn--retry:hover {
+  background: #fde7e5;
   color: var(--chrome-danger-hover);
 }
 

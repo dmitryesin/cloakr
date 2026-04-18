@@ -25,6 +25,7 @@ const passwordInput = document.getElementById("password") as HTMLInputElement;
 const rememberPasswordInput = document.getElementById("rememberPassword") as HTMLInputElement;
 const connectBtn = document.getElementById("connectBtn") as HTMLButtonElement;
 const disconnectBtn = document.getElementById("disconnectBtn") as HTMLButtonElement;
+const retryStatusBtn = document.getElementById("retryStatusBtn") as HTMLButtonElement;
 const saveBtn = document.getElementById("saveBtn") as HTMLButtonElement;
 const statusBadge = document.getElementById("statusBadge") as HTMLDivElement;
 const statusBar = document.getElementById("statusBar") as HTMLDivElement;
@@ -67,7 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function refreshStatus(): Promise<void> {
   const statusResponse = await sendMessage({ action: "getStatus" });
   if (isRuntimeError(statusResponse)) {
-    setDisconnectedUI();
+    setStatusUnavailableUI(statusResponse.error);
     return;
   }
 
@@ -85,6 +86,7 @@ function setConnectedUI(
   host: string | undefined,
   port: number | undefined
 ): void {
+  hideError();
   const protocolLabel = (protocol || "http").toUpperCase();
   statusBadge.textContent = "ON";
   statusBadge.className = "status-badge status-on";
@@ -92,16 +94,45 @@ function setConnectedUI(
   statusText.textContent = `Using ${protocolLabel} ${host || ""}:${port || ""}`;
   connectBtn.style.display = "none";
   disconnectBtn.style.display = "";
+  retryStatusBtn.style.display = "none";
 }
 
 function setDisconnectedUI(): void {
+  hideError();
   statusBadge.textContent = "OFF";
   statusBadge.className = "status-badge status-off";
   statusBar.className = "status-bar status-bar--inactive";
   statusText.textContent = "Proxy is off";
   connectBtn.style.display = "";
   disconnectBtn.style.display = "none";
+  retryStatusBtn.style.display = "none";
 }
+
+function setStatusUnavailableUI(reason?: string): void {
+  statusBadge.textContent = "ERR";
+  statusBadge.className = "status-badge status-error";
+  statusBar.className = "status-bar status-bar--error";
+  statusText.textContent = "Status unavailable";
+  connectBtn.style.display = "none";
+  disconnectBtn.style.display = "none";
+  retryStatusBtn.style.display = "";
+
+  if (reason) {
+    showError(`Could not read proxy status: ${reason}`);
+  }
+}
+
+retryStatusBtn.addEventListener("click", async () => {
+  hideError();
+  retryStatusBtn.textContent = "Retrying...";
+  retryStatusBtn.disabled = true;
+  try {
+    await refreshStatus();
+  } finally {
+    retryStatusBtn.textContent = "Retry";
+    retryStatusBtn.disabled = false;
+  }
+});
 
 // Connection controls.
 connectBtn.addEventListener("click", async () => {
