@@ -43,6 +43,9 @@ const PROTOCOL_LABELS: Record<ProxyProtocol, string> = {
   socks5: "SOCKS5",
 };
 
+const DISCONNECT_MODE_OFF = "off";
+const DISCONNECT_MODE_RELOAD = "reload";
+
 type ProxyProtocol = "http" | "https" | "socks5";
 
 type SavedProxyConfig = {
@@ -55,12 +58,25 @@ type SavedProxyConfig = {
   id?: number;
 };
 
+type ActiveProxyFormConfig = {
+  protocol: ProxyProtocol;
+  host: string;
+  port: number | null;
+  username: string;
+  password: string;
+  rememberPassword: boolean;
+};
+
+let isProxyConnected = false;
+let activeProxySnapshot: ActiveProxyFormConfig | null = null;
+
 // Initialization.
 document.addEventListener("DOMContentLoaded", async () => {
   initProtocolSelect();
+  initConfigChangeTracking();
   void loadSavedProxies();
-  void refreshStatus();
-  void loadLastConfig();
+  await loadLastConfig();
+  await refreshStatus();
   updateAuthInputsState();
 });
 
@@ -86,6 +102,7 @@ function setConnectedUI(
   host: string | undefined,
   port: number | undefined
 ): void {
+  isProxyConnected = true;
   hideError();
   const protocolLabel = (protocol || "http").toUpperCase();
   statusBadge.textContent = "ON";
@@ -95,9 +112,17 @@ function setConnectedUI(
   connectBtn.style.display = "none";
   disconnectBtn.style.display = "";
   retryStatusBtn.style.display = "none";
+
+  if (!activeProxySnapshot) {
+    activeProxySnapshot = getCurrentFormConfig();
+  }
+
+  updateDisconnectButtonMode();
 }
 
 function setDisconnectedUI(): void {
+  isProxyConnected = false;
+  activeProxySnapshot = null;
   hideError();
   statusBadge.textContent = "OFF";
   statusBadge.className = "status-badge status-off";
@@ -106,6 +131,7 @@ function setDisconnectedUI(): void {
   connectBtn.style.display = "";
   disconnectBtn.style.display = "none";
   retryStatusBtn.style.display = "none";
+  setDisconnectButtonMode(DISCONNECT_MODE_OFF);
 }
 
 function setStatusUnavailableUI(reason?: string): void {
@@ -138,32 +164,26 @@ retryStatusBtn.addEventListener("click", async () => {
 connectBtn.addEventListener("click", async () => {
   hideError();
 
-  const host = hostInput.value.trim();
-  const port = portInput.value.trim();
-  const normalizedPort = normalizePort(port);
-  const protocol = protocolInput.value as ProxyProtocol;
-  const isSocks5 = protocol === "socks5";
-  const username = isSocks5 ? "" : usernameInput.value.trim();
-  const password = isSocks5 ? "" : passwordInput.value;
-  const rememberPassword = isSocks5 ? false : rememberPasswordInput.checked;
+  const config = getValidatedFormConfig();
+  if (!config) return;
 
-  if (!host) return showError("Enter server address.");
-  if (normalizedPort == null) return showError("Enter a valid port (1-65535).");
+  const { protocol, host, port, username, password, rememberPassword } = config;
 
   connectBtn.textContent = "Turning on...";
   connectBtn.disabled = true;
 
   const result = await sendMessage({
     action: "setProxy",
-    config: { protocol, host, port: normalizedPort, username, password, rememberPassword },
+    config: { protocol, host, port, username, password, rememberPassword },
   });
 
   connectBtn.textContent = "Turn on";
   connectBtn.disabled = false;
 
   if (!isRuntimeError(result)) {
-    setConnectedUI(protocol, host, normalizedPort);
-    const lastConfig: SavedProxyConfig = { protocol, host, port: normalizedPort, username, rememberPassword };
+    activeProxySnapshot = getCurrentFormConfig();
+    setConnectedUI(protocol, host, port);
+    const lastConfig: SavedProxyConfig = { protocol, host, port, username, rememberPassword };
     if (rememberPassword) {
       lastConfig.password = password;
     }
@@ -175,6 +195,47 @@ connectBtn.addEventListener("click", async () => {
 });
 
 disconnectBtn.addEventListener("click", async () => {
+  const currentMode = disconnectBtn.dataset.mode || DISCONNECT_MODE_OFF;
+
+  if (currentMode === DISCONNECT_MODE_RELOAD) {
+    hideError();
+
+    const config = getValidatedFormConfig();
+    if (!config) {
+      return;
+    }
+
+    const { protocol, host, port, username, password, rememberPassword } = config;
+
+    disconnectBtn.textContent = "Applying...";
+    disconnectBtn.disabled = true;
+
+    const result = await sendMessage({
+      action: "setProxy",
+      config: { protocol, host, port, username, password, rememberPassword },
+    });
+
+    disconnectBtn.disabled = false;
+
+    if (isRuntimeError(result)) {
+      updateDisconnectButtonMode();
+      showError(result.error || "Could not reload proxy settings.");
+      return;
+    }
+
+    activeProxySnapshot = getCurrentFormConfig();
+    setConnectedUI(protocol, host, port);
+
+    const lastConfig: SavedProxyConfig = { protocol, host, port, username, rememberPassword };
+    if (rememberPassword) {
+      lastConfig.password = password;
+    }
+    chrome.storage.local.set({ lastConfig });
+
+    await sendMessage({ action: "reloadCurrentTab" });
+    return;
+  }
+
   disconnectBtn.textContent = "Turning off...";
   disconnectBtn.disabled = true;
 
@@ -348,6 +409,7 @@ function initProtocolSelect(): void {
       syncProtocolSelect(protocol);
       closeProtocolMenu();
       updateAuthInputsState();
+      updateDisconnectButtonMode();
     });
   });
 
@@ -380,6 +442,8 @@ function syncProtocolSelect(protocol: ProxyProtocol): void {
     option.classList.toggle("is-selected", isSelected);
     option.setAttribute("aria-selected", isSelected ? "true" : "false");
   });
+
+  updateDisconnectButtonMode();
 }
 
 function openProtocolMenu(): void {
@@ -527,5 +591,108 @@ function updateAuthInputsState(): void {
   if (isSocks5) {
     rememberPasswordInput.checked = false;
   }
+
+  updateDisconnectButtonMode();
+}
+
+function initConfigChangeTracking(): void {
+  const fieldInputs: Array<HTMLInputElement> = [
+    hostInput,
+    portInput,
+    usernameInput,
+    passwordInput,
+  ];
+
+  fieldInputs.forEach((input) => {
+    input.addEventListener("input", () => {
+      updateDisconnectButtonMode();
+    });
+  });
+
+  rememberPasswordInput.addEventListener("change", () => {
+    updateDisconnectButtonMode();
+  });
+}
+
+function getValidatedFormConfig(): {
+  protocol: ProxyProtocol;
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  rememberPassword: boolean;
+} | null {
+  const host = hostInput.value.trim();
+  const portValue = portInput.value.trim();
+  const port = normalizePort(portValue);
+  const protocol = protocolInput.value as ProxyProtocol;
+  const isSocks5 = protocol === "socks5";
+  const username = isSocks5 ? "" : usernameInput.value.trim();
+  const password = isSocks5 ? "" : passwordInput.value;
+  const rememberPassword = isSocks5 ? false : rememberPasswordInput.checked;
+
+  if (!host) {
+    showError("Enter server address.");
+    return null;
+  }
+
+  if (port == null) {
+    showError("Enter a valid port (1-65535).");
+    return null;
+  }
+
+  return {
+    protocol,
+    host,
+    port,
+    username,
+    password,
+    rememberPassword,
+  };
+}
+
+function getCurrentFormConfig(): ActiveProxyFormConfig {
+  const protocol = (isProxyProtocol(protocolInput.value) ? protocolInput.value : "http") as ProxyProtocol;
+  const isSocks5 = protocol === "socks5";
+
+  return {
+    protocol,
+    host: hostInput.value.trim(),
+    port: normalizePort(portInput.value.trim()),
+    username: isSocks5 ? "" : usernameInput.value.trim(),
+    password: isSocks5 ? "" : passwordInput.value,
+    rememberPassword: isSocks5 ? false : rememberPasswordInput.checked,
+  };
+}
+
+function hasConfigChangesFromActiveSnapshot(): boolean {
+  if (!activeProxySnapshot) {
+    return false;
+  }
+
+  const current = getCurrentFormConfig();
+
+  return (
+    current.protocol !== activeProxySnapshot.protocol ||
+    current.host !== activeProxySnapshot.host ||
+    current.port !== activeProxySnapshot.port ||
+    current.username !== activeProxySnapshot.username ||
+    current.password !== activeProxySnapshot.password ||
+    current.rememberPassword !== activeProxySnapshot.rememberPassword
+  );
+}
+
+function setDisconnectButtonMode(mode: typeof DISCONNECT_MODE_OFF | typeof DISCONNECT_MODE_RELOAD): void {
+  disconnectBtn.dataset.mode = mode;
+  disconnectBtn.textContent = mode === DISCONNECT_MODE_RELOAD ? "Reload" : "Turn off";
+}
+
+function updateDisconnectButtonMode(): void {
+  if (!isProxyConnected) {
+    setDisconnectButtonMode(DISCONNECT_MODE_OFF);
+    return;
+  }
+
+  setDisconnectButtonMode(hasConfigChangesFromActiveSnapshot() ? DISCONNECT_MODE_RELOAD : DISCONNECT_MODE_OFF);
 }
 
