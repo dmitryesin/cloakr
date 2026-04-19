@@ -6,7 +6,7 @@ export default defineConfig({
     version: "1.0.0",
     description: "Easily manage SOCKS5, HTTP, and HTTPS proxy settings in Chrome",
     manifest_version: 3,
-    permissions: ["proxy", "storage", "tabs", "webRequest"],
+    permissions: ["proxy", "storage", "tabs", "webRequest", "webRequestAuthProvider"],
     host_permissions: ["http://*/*", "https://*/*", "ws://*/*", "wss://*/*"],
     action: {
       default_popup: "popup.html",
