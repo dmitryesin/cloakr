@@ -8,20 +8,71 @@
   --chrome-bg: #ffffff;
   --chrome-surface: #f8f9fa;
   --chrome-surface-hover: #f1f3f4;
+  --chrome-surface-soft: #eef3fd;
   --chrome-border: #dadce0;
   --chrome-border-strong: #c4c7cc;
+  --chrome-border-hover: #bdc1c6;
+  --chrome-border-selected: #d2e3fc;
+  --chrome-border-secondary-hover: #b8c8f4;
   --chrome-text: #202124;
   --chrome-text-muted: #5f6368;
+  --chrome-placeholder: #80868b;
+  --chrome-dot-muted: #9aa0a6;
   --chrome-blue: #1a73e8;
   --chrome-blue-hover: #1765cc;
   --chrome-blue-focus: rgba(26, 115, 232, 0.24);
+  --chrome-shadow: rgba(32, 33, 36, 0.14);
   --chrome-danger: #d93025;
   --chrome-danger-hover: #b3261e;
   --chrome-success: #188038;
   --chrome-success-soft: #e6f4ea;
+  --chrome-success-text: #155d31;
   --chrome-danger-soft: #fce8e6;
+  --chrome-danger-soft-strong: #fff1f0;
+  --chrome-danger-soft-hover: #fde7e5;
+  --chrome-danger-btn-bg: #fdecea;
+  --chrome-danger-btn-bg-hover: #f9dedc;
+  --chrome-danger-text-strong: #8a1f1a;
   --radius: 8px;
   --font: "Segoe UI", "Noto Sans", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+  --chrome-bg: #202124;
+  --chrome-surface: #2b2c2f;
+  --chrome-surface-hover: #33353a;
+  --chrome-surface-soft: #2d3a52;
+  --chrome-border: #3c4043;
+  --chrome-border-strong: #5f6368;
+  --chrome-border-hover: #7a7f85;
+  --chrome-border-selected: #4f6ea8;
+  --chrome-border-secondary-hover: #5d78ad;
+  --chrome-text: #e8eaed;
+  --chrome-text-muted: #bdc1c6;
+  --chrome-placeholder: #9aa0a6;
+  --chrome-dot-muted: #9aa0a6;
+  --chrome-blue: #8ab4f8;
+  --chrome-blue-hover: #a8c7fa;
+  --chrome-blue-focus: rgba(138, 180, 248, 0.28);
+  --chrome-shadow: rgba(0, 0, 0, 0.38);
+  --chrome-danger: #f28b82;
+  --chrome-danger-hover: #f6aea9;
+  --chrome-success: #81c995;
+  --chrome-success-soft: rgba(129, 201, 149, 0.14);
+  --chrome-success-text: #d8f0de;
+  --chrome-danger-soft: rgba(242, 139, 130, 0.14);
+  --chrome-danger-soft-strong: rgba(242, 139, 130, 0.16);
+  --chrome-danger-soft-hover: rgba(242, 139, 130, 0.2);
+  --chrome-danger-btn-bg: rgba(242, 139, 130, 0.16);
+  --chrome-danger-btn-bg-hover: rgba(242, 139, 130, 0.24);
+  --chrome-danger-text-strong: #ffd9d5;
+  }
+}
+
+body,
+body * {
+  transition: background-color 0.24s ease, border-color 0.24s ease, color 0.24s ease, box-shadow 0.24s ease;
 }
 
 body {
@@ -76,7 +127,7 @@ body {
 }
 
 .status-badge.status-error {
-  background: #fff1f0;
+  background: var(--chrome-danger-soft-strong);
   color: var(--chrome-danger);
   border-color: rgba(217, 48, 37, 0.22);
 }
@@ -99,7 +150,7 @@ body {
 
 .status-bar--active {
   background: var(--chrome-success-soft);
-  color: #155d31;
+  color: var(--chrome-success-text);
 }
 
 .status-bar--inactive {
@@ -107,15 +158,15 @@ body {
 }
 
 .status-bar--error {
-  background: #fff1f0;
-  color: #8a1f1a;
+  background: var(--chrome-danger-soft-strong);
+  color: var(--chrome-danger-text-strong);
 }
 
 .status-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #9aa0a6;
+  background: var(--chrome-dot-muted);
   flex-shrink: 0;
 }
 
@@ -195,7 +246,7 @@ body {
 }
 
 .input:hover {
-  border-color: #bdc1c6;
+  border-color: var(--chrome-border-hover);
 }
 
 .input:focus {
@@ -204,7 +255,7 @@ body {
 }
 
 .input::placeholder {
-  color: #80868b;
+  color: var(--chrome-placeholder);
 }
 
 .protocol-select {
@@ -247,7 +298,7 @@ body {
   background: var(--chrome-bg);
   border: 1px solid var(--chrome-border);
   border-radius: var(--radius);
-  box-shadow: 0 8px 18px rgba(32, 33, 36, 0.14);
+  box-shadow: 0 8px 18px var(--chrome-shadow);
 }
 
 .protocol-menu[hidden] {
@@ -274,13 +325,13 @@ body {
 
 .protocol-option.is-selected {
   background: var(--chrome-surface);
-  border-color: #d2e3fc;
+  border-color: var(--chrome-border-selected);
   color: var(--chrome-blue);
   font-weight: 600;
 }
 
 .protocol-option.is-selected:hover {
-  background: #eef3fd;
+  background: var(--chrome-surface-soft);
 }
 
 .protocol-option:focus-visible {
@@ -398,7 +449,7 @@ body {
 }
 
 .saved-item:hover {
-  border-color: #c4c7cc;
+  border-color: var(--chrome-border-strong);
   background: var(--chrome-surface-hover);
 }
 
@@ -481,12 +532,12 @@ body {
 }
 
 .btn--secondary:hover {
-  background: #eef3fd;
-  border-color: #b8c8f4;
+  background: var(--chrome-surface-soft);
+  border-color: var(--chrome-border-secondary-hover);
 }
 
 .btn--danger {
-  background: #fdecea;
+  background: var(--chrome-danger-btn-bg);
   color: var(--chrome-danger);
   border-color: rgba(217, 48, 37, 0.24);
   flex: 1;
@@ -494,12 +545,12 @@ body {
 }
 
 .btn--danger:hover {
-  background: #f9dedc;
+  background: var(--chrome-danger-btn-bg-hover);
   color: var(--chrome-danger-hover);
 }
 
 .btn--retry {
-  background: #fff1f0;
+  background: var(--chrome-danger-soft-strong);
   color: var(--chrome-danger);
   border-color: rgba(217, 48, 37, 0.24);
   flex: 1;
@@ -507,7 +558,7 @@ body {
 }
 
 .btn--retry:hover {
-  background: #fde7e5;
+  background: var(--chrome-danger-soft-hover);
   color: var(--chrome-danger-hover);
 }
 
