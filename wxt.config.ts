@@ -5,7 +5,8 @@ export default defineConfig({
     name: "Cloakr",
     version: "1.0.0",
     description: "Easily manage SOCKS5, HTTP, and HTTPS proxy settings in Chrome",
-    permissions: ["proxy", "storage", "tabs", "webRequest", "webRequestAuthProvider"],
+    manifest_version: 3,
+    permissions: ["proxy", "storage", "tabs", "webRequest"],
     host_permissions: ["http://*/*", "https://*/*", "ws://*/*", "wss://*/*"],
     action: {
       default_popup: "popup.html",
