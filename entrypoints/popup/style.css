@@ -8,6 +8,7 @@
   --chrome-bg: #ffffff;
   --chrome-surface: #f8f9fa;
   --chrome-surface-hover: #f1f3f4;
+  --chrome-button-hover: #e6edfa;
   --chrome-surface-soft: #eef3fd;
   --chrome-border: #dadce0;
   --chrome-border-strong: #c4c7cc;
@@ -42,6 +43,7 @@
   --chrome-bg: #202124;
   --chrome-surface: #2b2c2f;
   --chrome-surface-hover: #33353a;
+  --chrome-button-hover: #26292d;
   --chrome-surface-soft: #2d3a52;
   --chrome-border: #3c4043;
   --chrome-border-strong: #5f6368;
@@ -526,14 +528,21 @@ body {
 }
 
 .btn--secondary {
-  background: var(--chrome-surface);
+  background: var(--btn-secondary-bg, var(--chrome-surface));
   color: var(--chrome-blue);
   border-color: var(--chrome-border-strong);
+  flex: 0.5;
+  justify-content: center;
 }
 
 .btn--secondary:hover {
-  background: var(--chrome-surface-soft);
-  border-color: var(--chrome-border-secondary-hover);
+  background: var(--btn-secondary-bg-hover, var(--chrome-button-hover));
+  border-color: var(--btn-secondary-border-hover, var(--chrome-border-secondary-hover));
+}
+
+.btn--secondary-ghost {
+  --btn-secondary-bg: transparent;
+  --btn-secondary-border-hover: var(--chrome-border-strong);
 }
 
 .btn--danger {
