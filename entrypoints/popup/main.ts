@@ -38,13 +38,14 @@ const MAX_SAVED_PROXIES = 30;
 const PROTOCOL_LABELS: Record<ProxyProtocol, string> = {
   http: "HTTP",
   https: "HTTPS",
+  socks4: "SOCKS4",
   socks5: "SOCKS5",
 };
 
 const DISCONNECT_MODE_OFF = "off";
 const DISCONNECT_MODE_RELOAD = "reload";
 
-type ProxyProtocol = "http" | "https" | "socks5";
+type ProxyProtocol = "http" | "https" | "socks4" | "socks5";
 
 type SavedProxyConfig = {
   protocol?: ProxyProtocol;
@@ -248,10 +249,10 @@ saveBtn.addEventListener("click", async () => {
   const port = portInput.value.trim();
   const normalizedPort = normalizePort(port);
   const protocol = protocolInput.value as ProxyProtocol;
-  const isSocks5 = protocol === "socks5";
-  const username = isSocks5 ? "" : usernameInput.value.trim();
-  const password = isSocks5 ? "" : passwordInput.value;
-  const rememberPassword = isSocks5 ? false : rememberPasswordInput.checked;
+  const isSocksProtocol = protocol === "socks4" || protocol === "socks5";
+  const username = isSocksProtocol ? "" : usernameInput.value.trim();
+  const password = isSocksProtocol ? "" : passwordInput.value;
+  const rememberPassword = isSocksProtocol ? false : rememberPasswordInput.checked;
 
   if (!host) return showError("Enter server address before saving.");
   if (normalizedPort == null) return showError("Enter a valid port (1-65535) before saving.");
@@ -455,7 +456,7 @@ function toggleProtocolMenu(): void {
 }
 
 function isProxyProtocol(value: string | undefined): value is ProxyProtocol {
-  return value === "http" || value === "https" || value === "socks5";
+  return value === "http" || value === "https" || value === "socks4" || value === "socks5";
 }
 
 function createDeleteIcon(): SVGSVGElement {
@@ -566,16 +567,16 @@ function normalizePort(value: string | number): number | null {
 }
 
 function updateAuthInputsState(): void {
-  const isSocks5 = protocolInput.value === "socks5";
+  const isSocksProtocol = protocolInput.value === "socks4" || protocolInput.value === "socks5";
 
-  authSection.style.display = isSocks5 ? "none" : "";
+  authSection.style.display = isSocksProtocol ? "none" : "";
 
-  usernameInput.disabled = isSocks5;
-  passwordInput.disabled = isSocks5;
-  togglePassword.disabled = isSocks5;
-  rememberPasswordInput.disabled = isSocks5;
+  usernameInput.disabled = isSocksProtocol;
+  passwordInput.disabled = isSocksProtocol;
+  togglePassword.disabled = isSocksProtocol;
+  rememberPasswordInput.disabled = isSocksProtocol;
 
-  if (isSocks5) {
+  if (isSocksProtocol) {
     rememberPasswordInput.checked = false;
   }
 
@@ -613,10 +614,10 @@ function getValidatedFormConfig(): {
   const portValue = portInput.value.trim();
   const port = normalizePort(portValue);
   const protocol = protocolInput.value as ProxyProtocol;
-  const isSocks5 = protocol === "socks5";
-  const username = isSocks5 ? "" : usernameInput.value.trim();
-  const password = isSocks5 ? "" : passwordInput.value;
-  const rememberPassword = isSocks5 ? false : rememberPasswordInput.checked;
+  const isSocksProtocol = protocol === "socks4" || protocol === "socks5";
+  const username = isSocksProtocol ? "" : usernameInput.value.trim();
+  const password = isSocksProtocol ? "" : passwordInput.value;
+  const rememberPassword = isSocksProtocol ? false : rememberPasswordInput.checked;
 
   if (!host) {
     showError("Enter server address.");
@@ -640,15 +641,15 @@ function getValidatedFormConfig(): {
 
 function getCurrentFormConfig(): ActiveProxyFormConfig {
   const protocol = (isProxyProtocol(protocolInput.value) ? protocolInput.value : "http") as ProxyProtocol;
-  const isSocks5 = protocol === "socks5";
+  const isSocksProtocol = protocol === "socks4" || protocol === "socks5";
 
   return {
     protocol,
     host: hostInput.value.trim(),
     port: normalizePort(portInput.value.trim()),
-    username: isSocks5 ? "" : usernameInput.value.trim(),
-    password: isSocks5 ? "" : passwordInput.value,
-    rememberPassword: isSocks5 ? false : rememberPasswordInput.checked,
+    username: isSocksProtocol ? "" : usernameInput.value.trim(),
+    password: isSocksProtocol ? "" : passwordInput.value,
+    rememberPassword: isSocksProtocol ? false : rememberPasswordInput.checked,
   };
 }
 

@@ -1,4 +1,4 @@
-export type ProxyProtocol = "http" | "https" | "socks5";
+export type ProxyProtocol = "http" | "https" | "socks4" | "socks5";
 
 export type ProxyConfig = {
   protocol?: ProxyProtocol;
