@@ -357,7 +357,7 @@ body {
 
 .saved-section {
   padding: 9px 14px;
-  background: var(--chrome-surface);
+  background: var(--chrome-bg);
 }
 
 .saved-header {
