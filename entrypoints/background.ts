@@ -294,7 +294,7 @@ async function reloadCurrentTab(): Promise<void> {
 }
 
 function isProxyProtocol(value: string | undefined): value is ProxyProtocol {
-  return value === "socks4" || value === "socks5" || value === "http" || value === "https";
+  return value === "socks4" || value === "socks5" || value === "http" || value === "https" || value === "quic";
 }
 
 });

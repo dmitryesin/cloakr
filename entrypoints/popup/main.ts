@@ -38,6 +38,7 @@ const MAX_SAVED_PROXIES = 30;
 const PROTOCOL_LABELS: Record<ProxyProtocol, string> = {
   http: "HTTP",
   https: "HTTPS",
+  quic: "QUIC",
   socks4: "SOCKS4",
   socks5: "SOCKS5",
 };
@@ -45,7 +46,7 @@ const PROTOCOL_LABELS: Record<ProxyProtocol, string> = {
 const DISCONNECT_MODE_OFF = "off";
 const DISCONNECT_MODE_RELOAD = "reload";
 
-type ProxyProtocol = "http" | "https" | "socks4" | "socks5";
+type ProxyProtocol = "http" | "https" | "quic" | "socks4" | "socks5";
 
 type SavedProxyConfig = {
   protocol?: ProxyProtocol;
@@ -456,7 +457,7 @@ function toggleProtocolMenu(): void {
 }
 
 function isProxyProtocol(value: string | undefined): value is ProxyProtocol {
-  return value === "http" || value === "https" || value === "socks4" || value === "socks5";
+  return value === "http" || value === "https" || value === "quic" || value === "socks4" || value === "socks5";
 }
 
 function createDeleteIcon(): SVGSVGElement {
