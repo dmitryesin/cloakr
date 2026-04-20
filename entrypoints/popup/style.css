@@ -90,7 +90,6 @@ body {
   align-items: center;
   gap: 8px;
   padding: 12px 14px;
-  border-bottom: 1px solid var(--chrome-border);
   background: var(--chrome-bg);
 }
 
@@ -357,7 +356,6 @@ body {
 }
 
 .saved-section {
-  border-top: 1px solid var(--chrome-border);
   padding: 9px 14px;
   background: var(--chrome-surface);
 }
@@ -432,7 +430,6 @@ body {
   display: flex;
   gap: 8px;
   padding: 10px 14px 12px;
-  border-top: 1px solid var(--chrome-border);
   background: var(--chrome-bg);
 }
 
