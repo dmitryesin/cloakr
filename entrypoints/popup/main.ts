@@ -28,8 +28,6 @@ const disconnectBtn = document.getElementById("disconnectBtn") as HTMLButtonElem
 const retryStatusBtn = document.getElementById("retryStatusBtn") as HTMLButtonElement;
 const saveBtn = document.getElementById("saveBtn") as HTMLButtonElement;
 const statusBadge = document.getElementById("statusBadge") as HTMLDivElement;
-const statusBar = document.getElementById("statusBar") as HTMLDivElement;
-const statusText = document.getElementById("statusText") as HTMLSpanElement;
 const errorMsg = document.getElementById("errorMsg") as HTMLDivElement;
 const authSection = document.getElementById("authSection") as HTMLDivElement;
 const togglePassword = document.getElementById("togglePassword") as HTMLButtonElement;
@@ -91,24 +89,17 @@ async function refreshStatus(): Promise<void> {
   const { enabled, config } = statusResponse as ProxyStatus;
 
   if (enabled && config) {
-    setConnectedUI(config.scheme, config.host, config.port);
+    setConnectedUI();
   } else {
     setDisconnectedUI();
   }
 }
 
-function setConnectedUI(
-  protocol: ProxyProtocol | undefined,
-  host: string | undefined,
-  port: number | undefined
-): void {
+function setConnectedUI(): void {
   isProxyConnected = true;
   hideError();
-  const protocolLabel = (protocol || "http").toUpperCase();
   statusBadge.textContent = "ON";
   statusBadge.className = "status-badge status-on";
-  statusBar.className = "status-bar status-bar--active";
-  statusText.textContent = `Using ${protocolLabel} ${host || ""}:${port || ""}`;
   connectBtn.style.display = "none";
   disconnectBtn.style.display = "";
   retryStatusBtn.style.display = "none";
@@ -126,8 +117,6 @@ function setDisconnectedUI(): void {
   hideError();
   statusBadge.textContent = "OFF";
   statusBadge.className = "status-badge status-off";
-  statusBar.className = "status-bar status-bar--inactive";
-  statusText.textContent = "Proxy is off";
   connectBtn.style.display = "";
   disconnectBtn.style.display = "none";
   retryStatusBtn.style.display = "none";
@@ -137,8 +126,6 @@ function setDisconnectedUI(): void {
 function setStatusUnavailableUI(reason?: string): void {
   statusBadge.textContent = "ERR";
   statusBadge.className = "status-badge status-error";
-  statusBar.className = "status-bar status-bar--error";
-  statusText.textContent = "Status unavailable";
   connectBtn.style.display = "none";
   disconnectBtn.style.display = "none";
   retryStatusBtn.style.display = "";
@@ -182,7 +169,7 @@ connectBtn.addEventListener("click", async () => {
 
   if (!isRuntimeError(result)) {
     activeProxySnapshot = getCurrentFormConfig();
-    setConnectedUI(protocol, host, port);
+    setConnectedUI();
     const lastConfig: SavedProxyConfig = { protocol, host, port, username, rememberPassword };
     if (rememberPassword) {
       lastConfig.password = password;
@@ -224,7 +211,7 @@ disconnectBtn.addEventListener("click", async () => {
     }
 
     activeProxySnapshot = getCurrentFormConfig();
-    setConnectedUI(protocol, host, port);
+    setConnectedUI();
 
     const lastConfig: SavedProxyConfig = { protocol, host, port, username, rememberPassword };
     if (rememberPassword) {

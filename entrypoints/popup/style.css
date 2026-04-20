@@ -18,7 +18,6 @@
   --chrome-text: #202124;
   --chrome-text-muted: #5f6368;
   --chrome-placeholder: #80868b;
-  --chrome-dot-muted: #9aa0a6;
   --chrome-blue: #1a73e8;
   --chrome-blue-hover: #1765cc;
   --chrome-blue-focus: rgba(26, 115, 232, 0.24);
@@ -27,13 +26,11 @@
   --chrome-danger-hover: #b3261e;
   --chrome-success: #188038;
   --chrome-success-soft: #e6f4ea;
-  --chrome-success-text: #155d31;
   --chrome-danger-soft: #fce8e6;
   --chrome-danger-soft-strong: #fff1f0;
   --chrome-danger-soft-hover: #fde7e5;
   --chrome-danger-btn-bg: #fdecea;
   --chrome-danger-btn-bg-hover: #f9dedc;
-  --chrome-danger-text-strong: #8a1f1a;
   --radius: 8px;
   --font: "Segoe UI", "Noto Sans", Arial, sans-serif;
 }
@@ -53,7 +50,6 @@
   --chrome-text: #e8eaed;
   --chrome-text-muted: #bdc1c6;
   --chrome-placeholder: #9aa0a6;
-  --chrome-dot-muted: #9aa0a6;
   --chrome-blue: #8ab4f8;
   --chrome-blue-hover: #a8c7fa;
   --chrome-blue-focus: rgba(138, 180, 248, 0.28);
@@ -62,13 +58,11 @@
   --chrome-danger-hover: #f6aea9;
   --chrome-success: #81c995;
   --chrome-success-soft: rgba(129, 201, 149, 0.14);
-  --chrome-success-text: #d8f0de;
   --chrome-danger-soft: rgba(242, 139, 130, 0.14);
   --chrome-danger-soft-strong: rgba(242, 139, 130, 0.16);
   --chrome-danger-soft-hover: rgba(242, 139, 130, 0.2);
   --chrome-danger-btn-bg: rgba(242, 139, 130, 0.16);
   --chrome-danger-btn-bg-hover: rgba(242, 139, 130, 0.24);
-  --chrome-danger-text-strong: #ffd9d5;
   }
 }
 
@@ -138,60 +132,6 @@ body {
   background: var(--chrome-success-soft);
   color: var(--chrome-success);
   border-color: rgba(24, 128, 56, 0.2);
-}
-
-.status-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  font-size: 12px;
-  border-bottom: 1px solid var(--chrome-border);
-  color: var(--chrome-text-muted);
-}
-
-.status-bar--active {
-  background: var(--chrome-success-soft);
-  color: var(--chrome-success-text);
-}
-
-.status-bar--inactive {
-  background: var(--chrome-surface);
-}
-
-.status-bar--error {
-  background: var(--chrome-danger-soft-strong);
-  color: var(--chrome-danger-text-strong);
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--chrome-dot-muted);
-  flex-shrink: 0;
-}
-
-.status-bar--active .status-dot {
-  background: var(--chrome-success);
-  box-shadow: 0 0 0 3px rgba(24, 128, 56, 0.16);
-  animation: pulse 1.8s infinite;
-}
-
-.status-bar--error .status-dot {
-  background: var(--chrome-danger);
-  box-shadow: 0 0 0 3px rgba(217, 48, 37, 0.14);
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.55;
-  }
 }
 
 .form {
