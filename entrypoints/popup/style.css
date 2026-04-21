@@ -328,7 +328,45 @@ body {
 }
 
 .remember-password input[type="checkbox"] {
-  accent-color: var(--chrome-blue);
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--chrome-border-strong);
+  border-radius: 4px;
+  background: var(--chrome-surface);
+  cursor: pointer;
+  display: grid;
+  place-content: center;
+  transition: background-color 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.remember-password input[type="checkbox"]:hover {
+  border-color: var(--chrome-border-hover);
+}
+
+.remember-password input[type="checkbox"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--chrome-blue-focus);
+}
+
+.remember-password input[type="checkbox"]::before {
+  content: "";
+  width: 7px;
+  height: 4px;
+  border-left: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  transform: rotate(-45deg) scale(0);
+  transform-origin: center;
+  transition: transform 0.12s ease;
+}
+
+.remember-password input[type="checkbox"]:checked {
+  background: var(--chrome-blue);
+  border-color: var(--chrome-blue);
+}
+
+.remember-password input[type="checkbox"]:checked::before {
+  transform: rotate(-45deg) scale(1);
 }
 
 .divider {
