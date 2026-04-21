@@ -1,6 +1,6 @@
 # Cloakr - Proxy Manager for Chrome
 
-A lightweight, open-source Chrome extension for managing proxy configurations with support for multiple protocols, including SOCKS5, and proxy authentication.
+A lightweight, open-source Chrome extension for managing proxy configurations across multiple protocols, including SOCKS5, with built-in proxy authentication support.
 
 ## Installation
 
@@ -44,7 +44,7 @@ A lightweight, open-source Chrome extension for managing proxy configurations wi
 4. **Add Credentials** (optional):
    - Username (optional, required if proxy needs authentication)
    - Password (optional)
-   - Remember Password (stores password locally)
+   - Store password on this device (stores password locally)
 5. **Click "Turn on"** to activate the proxy
 
 ## Development
@@ -79,7 +79,7 @@ cloakr/
 
 ### Extension Permissions
 
-Cloakr requests the following permissions:
+Cloakr requests the following extension permissions:
 
 | Permission | Purpose |
 |-----------|---------|
@@ -88,6 +88,15 @@ Cloakr requests the following permissions:
 | `tabs` | Reload current tab when proxy changes |
 | `webRequest` | Handle proxy authentication challenges |
 | `webRequestAuthProvider` | Provide credentials for proxy authentication requests |
+
+It also requests the following host permissions:
+
+| Host Permission | Purpose |
+|----------------|---------|
+| `http://*/*` | Allow proxy handling for HTTP pages |
+| `https://*/*` | Allow proxy handling for HTTPS pages |
+| `ws://*/*` | Allow proxy handling for WebSocket traffic |
+| `wss://*/*` | Allow proxy handling for secure WebSocket traffic |
 
 All data stays local. We don't use these permissions to collect or transmit data.
 
