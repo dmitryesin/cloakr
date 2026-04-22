@@ -131,7 +131,7 @@ async function applyProxy(config: ProxyConfig): Promise<void> {
     mode: "fixed_servers",
     rules: {
       singleProxy: {
-        scheme: normalizedProtocol as ProxyProtocol,
+        scheme: normalizedProtocol,
         host: normalizedHost,
         port: normalizedPort,
       },
@@ -271,7 +271,6 @@ chrome.storage.local.get(["proxyConfig", "proxyEnabled"], async (data: StartupSt
 
     try {
       await applyProxy(storedConfig);
-      console.log("[Cloakr] Restored proxy settings on startup");
     } catch (e) {
       console.error("[Cloakr] Failed to restore settings:", e);
     }

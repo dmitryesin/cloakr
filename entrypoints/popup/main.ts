@@ -1,7 +1,4 @@
-export {};
-
 import type {
-  ProxyConfig,
   ProxyStatus,
   RuntimeErrorResponse,
   RuntimeMessage,
@@ -88,7 +85,7 @@ async function refreshStatus(): Promise<void> {
     return;
   }
 
-  const { enabled, config } = statusResponse as ProxyStatus;
+  const { enabled, config } = statusResponse;
 
   if (enabled && config) {
     setConnectedUI();
@@ -398,7 +395,6 @@ function initProtocolSelect(): void {
       syncProtocolSelect(protocol);
       closeProtocolMenu();
       updateAuthInputsState();
-      updateDisconnectButtonMode();
     });
   });
 
