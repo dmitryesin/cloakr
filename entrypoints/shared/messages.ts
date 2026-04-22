@@ -16,6 +16,7 @@ export type ProxyStatus = {
     host?: string;
     port?: number;
   } | null;
+  lockReason?: "external_proxy_active";
 };
 
 export type RuntimeErrorResponse = {

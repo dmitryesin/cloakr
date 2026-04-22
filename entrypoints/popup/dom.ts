@@ -1,4 +1,5 @@
 export const hostInput = document.getElementById("host") as HTMLInputElement;
+export const popupApp = document.querySelector(".app") as HTMLDivElement;
 export const portInput = document.getElementById("port") as HTMLInputElement;
 export const protocolInput = document.getElementById("protocol") as HTMLInputElement;
 export const protocolSelect = document.getElementById("protocolSelect") as HTMLDivElement;
@@ -17,6 +18,8 @@ export const retryStatusBtn = document.getElementById("retryStatusBtn") as HTMLB
 export const saveBtn = document.getElementById("saveBtn") as HTMLButtonElement;
 export const statusBadge = document.getElementById("statusBadge") as HTMLDivElement;
 export const errorMsg = document.getElementById("errorMsg") as HTMLDivElement;
+export const networkLockOverlay = document.getElementById("networkLockOverlay") as HTMLDivElement;
+export const networkLockMessage = document.getElementById("networkLockMessage") as HTMLParagraphElement;
 export const authSection = document.getElementById("authSection") as HTMLDivElement;
 export const togglePassword = document.getElementById("togglePassword") as HTMLButtonElement;
 export const savedSection = document.getElementById("savedSection") as HTMLDivElement;
