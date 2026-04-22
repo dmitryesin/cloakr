@@ -21,7 +21,14 @@ type StartupStorageData = {
   proxyEnabled?: boolean;
 };
 
+type ProxySettingsSnapshot = {
+  enabled: boolean;
+  config: ProxyStatus["config"];
+  controlledByOtherExtension: boolean;
+};
+
 let proxyCredentials: ProxyCredentials | null = null;
+let isApplyingProxy = false;
 const SESSION_CREDENTIALS_KEY = "sessionProxyCredentials";
 
 async function setSessionCredentials(credentials: ProxyCredentials): Promise<void> {
@@ -33,6 +40,11 @@ async function clearSessionCredentials(): Promise<void> {
 }
 
 async function getActiveProxyCredentials(): Promise<ProxyCredentials | null> {
+  const managedProxyActive = await isCloakrManagedProxyActive();
+  if (!managedProxyActive) {
+    return null;
+  }
+
   if (proxyCredentials?.username) {
     return proxyCredentials;
   }
@@ -139,10 +151,7 @@ async function applyProxy(config: ProxyConfig): Promise<void> {
     },
   };
 
-  await chrome.proxy.settings.set({
-    value: proxyConfig,
-    scope: "regular",
-  });
+  isApplyingProxy = true;
 
   const persistedConfig: ProxyConfig = {
     protocol: normalizedProtocol,
@@ -156,11 +165,120 @@ async function applyProxy(config: ProxyConfig): Promise<void> {
     persistedConfig.password = password || "";
   }
 
-  // Persist the active configuration.
+  // Persist first so proxy change listeners do not briefly see a stale disabled state.
   await chrome.storage.local.set({
     proxyConfig: persistedConfig,
     proxyEnabled: true,
   });
+
+  try {
+    await chrome.proxy.settings.set({
+      value: proxyConfig,
+      scope: "regular",
+    });
+  } catch (error) {
+    await chrome.storage.local.set({ proxyEnabled: false });
+    proxyCredentials = null;
+    await clearSessionCredentials();
+    throw error;
+  } finally {
+    isApplyingProxy = false;
+  }
+}
+
+function normalizeProxyConfigForComparison(
+  config:
+    | { protocol?: string; scheme?: string; host?: string; port?: number | string }
+    | null
+    | undefined
+): ProxyStatus["config"] {
+  if (!config) {
+    return null;
+  }
+
+  const rawProtocol =
+    typeof config.protocol === "string"
+      ? config.protocol
+      : typeof config.scheme === "string"
+        ? config.scheme
+        : undefined;
+  const protocol = isProxyProtocol(rawProtocol) ? rawProtocol : undefined;
+  const host = typeof config.host === "string" ? config.host.trim().toLowerCase() : "";
+  const port = normalizePort(config.port);
+
+  if (!protocol || !host || port == null) {
+    return null;
+  }
+
+  return {
+    scheme: protocol,
+    host,
+    port,
+  };
+}
+
+async function readCurrentProxySettings(): Promise<ProxySettingsSnapshot> {
+  return new Promise((resolve) => {
+    chrome.proxy.settings.get(
+      { incognito: false },
+      (details: chrome.types.ChromeSettingGetResult<chrome.proxy.ProxyConfig>) => {
+        const mode = details?.value?.mode;
+        const singleProxy = details?.value?.rules?.singleProxy;
+        const levelOfControl = details?.levelOfControl;
+        resolve({
+          enabled: mode === "fixed_servers",
+          config: mode === "fixed_servers" ? normalizeProxyConfigForComparison(singleProxy) : null,
+          controlledByOtherExtension: levelOfControl === "controlled_by_other_extensions",
+        });
+      }
+    );
+  });
+}
+
+async function isCloakrManagedProxyActive(): Promise<boolean> {
+  if (isApplyingProxy) {
+    return true;
+  }
+
+  const [storageData, currentProxy] = await Promise.all([
+    chrome.storage.local.get(["proxyConfig", "proxyEnabled"]),
+    readCurrentProxySettings(),
+  ]);
+
+  const storedEnabled = Boolean(storageData?.proxyEnabled);
+  const storedConfig = normalizeProxyConfigForComparison(storageData?.proxyConfig as ProxyConfig | undefined);
+
+  if (!storedEnabled || !storedConfig) {
+    proxyCredentials = null;
+    await clearSessionCredentials();
+    return false;
+  }
+
+  if (currentProxy.controlledByOtherExtension) {
+    // Keep saved state intact while another extension controls proxy settings.
+    return false;
+  }
+
+  if (!currentProxy.enabled || !currentProxy.config) {
+    await chrome.storage.local.set({ proxyEnabled: false });
+    proxyCredentials = null;
+    await clearSessionCredentials();
+    return false;
+  }
+
+  const configsMatch =
+    storedConfig.scheme === currentProxy.config.scheme &&
+    storedConfig.host === currentProxy.config.host &&
+    storedConfig.port === currentProxy.config.port;
+
+  if (!configsMatch) {
+    await chrome.storage.local.set({ proxyEnabled: false });
+    proxyCredentials = null;
+    await clearSessionCredentials();
+    return false;
+  }
+
+  return true;
 }
 
 function normalizePort(value: number | string | undefined): number | null {
@@ -195,26 +313,24 @@ async function clearProxy(): Promise<void> {
 }
 
 async function getProxyStatus(): Promise<ProxyStatus> {
-  return new Promise((resolve) => {
-    chrome.proxy.settings.get(
-      { incognito: false },
-      (details: chrome.types.ChromeSettingGetResult<chrome.proxy.ProxyConfig>) => {
-        const singleProxy = details?.value?.rules?.singleProxy;
-        const scheme = isProxyProtocol(singleProxy?.scheme) ? singleProxy?.scheme : undefined;
-        const enabled = details?.value?.mode === "fixed_servers";
-        resolve({
-          enabled,
-          config: singleProxy
-            ? {
-                scheme,
-                host: singleProxy.host,
-                port: singleProxy.port,
-              }
-            : null,
-        });
-      }
-    );
-  });
+  const managedProxyActive = await isCloakrManagedProxyActive();
+  const currentProxy = await readCurrentProxySettings();
+
+  if (!managedProxyActive) {
+    return {
+      enabled: false,
+      config: null,
+      lockReason:
+        currentProxy.controlledByOtherExtension || currentProxy.enabled
+          ? "external_proxy_active"
+          : undefined,
+    };
+  }
+
+  return {
+    enabled: currentProxy.enabled,
+    config: currentProxy.config,
+  };
 }
 
 // Respond to proxy auth challenges.
@@ -258,10 +374,24 @@ try {
   // WXT build-time fake browser does not implement this API.
 }
 
+try {
+  chrome.proxy.settings.onChange.addListener(() => {
+    void isCloakrManagedProxyActive();
+  });
+} catch {
+  // Some environments expose a limited proxy settings API during build.
+}
+
 // Restore the saved proxy on startup.
 chrome.storage.local.get(["proxyConfig", "proxyEnabled"], async (data: StartupStorageData) => {
   const storedConfig = data.proxyConfig as ProxyConfig | undefined;
   if (data.proxyEnabled && storedConfig) {
+    const currentProxy = await readCurrentProxySettings();
+    if (currentProxy.controlledByOtherExtension) {
+      console.warn("[Cloakr] Proxy restore skipped: another extension controls proxy settings");
+      return;
+    }
+
     const hasSavedPassword = Object.prototype.hasOwnProperty.call(storedConfig, "password");
     if (storedConfig.username && !hasSavedPassword) {
       await clearProxy();

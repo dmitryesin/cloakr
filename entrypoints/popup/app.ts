@@ -5,7 +5,10 @@ import {
   disconnectBtn,
   errorMsg,
   hostInput,
+  networkLockMessage,
+  networkLockOverlay,
   passwordInput,
+  popupApp,
   portInput,
   protocolInput,
   protocolLabel,
@@ -42,6 +45,7 @@ export function initPopupApp(): void {
     initProtocolSelect();
     initConfigChangeTracking();
     initEventHandlers();
+    initProxySettingsChangeTracking();
 
     void loadSavedProxies();
     await loadLastConfig();
@@ -223,7 +227,12 @@ async function refreshStatus(): Promise<void> {
     return;
   }
 
-  const { enabled, config } = statusResponse;
+  const { enabled, config, lockReason } = statusResponse;
+
+  if (lockReason === "external_proxy_active") {
+    setNetworkLockedUI();
+    return;
+  }
 
   if (enabled && config) {
     setConnectedUI();
@@ -233,6 +242,7 @@ async function refreshStatus(): Promise<void> {
 }
 
 function setConnectedUI(): void {
+  clearNetworkLockUI();
   isProxyConnected = true;
   hideError();
   statusBadge.textContent = "ON";
@@ -249,6 +259,7 @@ function setConnectedUI(): void {
 }
 
 function setDisconnectedUI(): void {
+  clearNetworkLockUI();
   isProxyConnected = false;
   activeProxySnapshot = null;
   hideError();
@@ -260,7 +271,36 @@ function setDisconnectedUI(): void {
   setDisconnectButtonMode(DISCONNECT_MODE_OFF);
 }
 
+function setNetworkLockedUI(): void {
+  document.body.classList.add("is-network-locked");
+  popupApp.inert = true;
+  popupApp.setAttribute("aria-hidden", "true");
+  networkLockOverlay.hidden = false;
+  const activeElement = document.activeElement as HTMLElement | null;
+  activeElement?.blur();
+  networkLockOverlay.focus();
+  networkLockMessage.textContent =
+    "Another extension is currently controlling network settings. Turn off that extension's proxy to use Cloakr.";
+  isProxyConnected = false;
+  activeProxySnapshot = null;
+  hideError();
+  statusBadge.textContent = "LOCK";
+  statusBadge.className = "status-badge status-error";
+  connectBtn.style.display = "none";
+  disconnectBtn.style.display = "none";
+  retryStatusBtn.style.display = "none";
+}
+
+function clearNetworkLockUI(): void {
+  document.body.classList.remove("is-network-locked");
+  popupApp.inert = false;
+  popupApp.removeAttribute("aria-hidden");
+  networkLockOverlay.hidden = true;
+  networkLockMessage.textContent = "";
+}
+
 function setStatusUnavailableUI(reason?: string): void {
+  clearNetworkLockUI();
   statusBadge.textContent = "ERR";
   statusBadge.className = "status-badge status-error";
   connectBtn.style.display = "none";
@@ -450,6 +490,16 @@ function initConfigChangeTracking(): void {
   rememberPasswordInput.addEventListener("change", () => {
     updateDisconnectButtonMode();
   });
+}
+
+function initProxySettingsChangeTracking(): void {
+  try {
+    chrome.proxy.settings.onChange.addListener(() => {
+      void refreshStatus();
+    });
+  } catch {
+    // Popup still works without live proxy change notifications.
+  }
 }
 
 function hasConfigChangesFromActiveSnapshot(): boolean {
