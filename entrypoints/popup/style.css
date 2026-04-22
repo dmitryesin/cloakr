@@ -236,10 +236,39 @@ body {
   flex-direction: column;
   gap: 2px;
   padding: 5px;
+  max-height: 110px;
+  overflow-y: auto;
   background: var(--chrome-bg);
   border: 1px solid var(--chrome-border);
   border-radius: var(--radius);
   box-shadow: 0 8px 18px var(--chrome-shadow);
+}
+
+.protocol-menu,
+.saved-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--chrome-border-strong) transparent;
+}
+
+.protocol-menu::-webkit-scrollbar,
+.saved-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.protocol-menu::-webkit-scrollbar-track,
+.saved-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.protocol-menu::-webkit-scrollbar-thumb,
+.saved-list::-webkit-scrollbar-thumb {
+  background: var(--chrome-border-strong);
+  border-radius: 999px;
+}
+
+.protocol-menu::-webkit-scrollbar-thumb:hover,
+.saved-list::-webkit-scrollbar-thumb:hover {
+  background: var(--chrome-border-hover);
 }
 
 .protocol-menu[hidden] {
