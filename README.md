@@ -68,7 +68,13 @@ cloakr/
 │   ├── background.ts          # Service worker
 │   ├── popup/
 │   │   ├── index.html         # Popup UI
-│   │   ├── main.ts            # Popup logic
+│   │   ├── main.ts            # Popup bootstrap
+│   │   ├── app.ts             # Popup app orchestration and handlers
+│   │   ├── api.ts             # Chrome runtime/storage API wrappers
+│   │   ├── dom.ts             # Centralized DOM references
+│   │   ├── form.ts            # Form validation and normalization
+│   │   ├── icons.ts           # SVG icon helpers
+│   │   ├── types.ts           # Popup-specific types and constants
 │   │   └── style.css          # Popup styling
 │   └── shared/
 │       └── messages.ts        # Type definitions
