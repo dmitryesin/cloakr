@@ -4,6 +4,17 @@ A lightweight, open-source Chrome extension for managing proxy configurations ac
 
 ## Installation
 
+### From GitHub Release
+1. Open the [latest release page](https://github.com/dmitryesin/cloakr/releases/latest)
+2. Download the release archive
+3. Extract the archive to any local folder
+4. Open Chrome and go to `chrome://extensions/`
+5. Enable "Developer mode" (top-right corner)
+6. Click "Load unpacked"
+7. Select the extracted extension folder
+
+Note: Manual GitHub installation does not auto-update. To update, download and load a newer release.
+
 <!-- ### From Chrome Web Store
 1. Visit [Cloakr on Chrome Web Store]()
 2. Click "Add to Chrome"
