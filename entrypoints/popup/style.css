@@ -439,7 +439,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  max-height: 108px;
+  max-height: 140px;
   overflow-y: auto;
 }
 
