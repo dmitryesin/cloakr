@@ -41,7 +41,7 @@ Note: Manual GitHub installation does not auto-update. To update, download and l
    - Open Chrome and go to `chrome://extensions/`
    - Enable "Developer mode" (top-right corner)
    - Click "Load unpacked"
-   - Select the `.output/chrome-mv3-prod` directory
+   - Select the `.output/chrome-mv3` directory
 
 ## Usage
 
