@@ -127,7 +127,7 @@ async function applyProxy(config: ProxyConfig): Promise<void> {
     await clearSessionCredentials();
   }
 
-  const proxyConfig = {
+  const proxyConfig: chrome.proxy.ProxyConfig = {
     mode: "fixed_servers",
     rules: {
       singleProxy: {
@@ -221,7 +221,7 @@ async function getProxyStatus(): Promise<ProxyStatus> {
 try {
   chrome.webRequest.onAuthRequired.addListener(
     (
-      details: chrome.webRequest.WebAuthenticationChallengeDetails,
+      details: chrome.webRequest.OnAuthRequiredDetails,
       callback?: (response: chrome.webRequest.BlockingResponse) => void
     ) => {
       if (!callback) {
