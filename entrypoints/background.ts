@@ -104,7 +104,7 @@ async function applyProxy(config: ProxyConfig): Promise<void> {
   const normalizedHost = typeof host === "string" ? host.trim() : "";
   const normalizedPort = normalizePort(port);
   const normalizedProtocolRaw =
-    typeof protocol === "string" ? protocol.toLowerCase().trim() : "socks5";
+    typeof protocol === "string" ? protocol.toLowerCase().trim() : "http";
   const normalizedRememberPassword = Boolean(rememberPassword);
   const hasPassword = Object.prototype.hasOwnProperty.call(config, "password");
 
