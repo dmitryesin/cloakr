@@ -73,71 +73,16 @@ body * {
 
 body {
   width: 332px;
-  position: relative;
   background: var(--chrome-bg);
   color: var(--chrome-text);
   font-family: var(--font);
   font-size: 13px;
   line-height: 1.42;
-  overflow: hidden;
 }
 
 .app {
   display: flex;
   flex-direction: column;
-}
-
-body.is-network-locked .app {
-  filter: blur(7px) saturate(0.85);
-  pointer-events: none;
-  user-select: none;
-}
-
-.network-lock-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.58);
-  backdrop-filter: blur(14px) saturate(0.9);
-  -webkit-backdrop-filter: blur(14px) saturate(0.9);
-}
-
-.network-lock-overlay[hidden] {
-  display: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  .network-lock-overlay {
-    background: rgba(20, 22, 26, 0.58);
-  }
-}
-
-.network-lock-card {
-  width: 100%;
-  max-width: 280px;
-  padding: 18px 16px;
-  border-radius: 16px;
-  border: 1px solid var(--chrome-border);
-  background: color-mix(in srgb, var(--chrome-bg) 84%, transparent);
-  box-shadow: 0 18px 42px var(--chrome-shadow);
-  text-align: center;
-}
-
-.network-lock-title {
-  margin-bottom: 8px;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--chrome-text);
-}
-
-.network-lock-message {
-  color: var(--chrome-text-muted);
-  font-size: 12px;
-  line-height: 1.5;
 }
 
 .header {
