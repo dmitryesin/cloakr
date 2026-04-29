@@ -120,9 +120,3 @@ All data stays local. We don't use these permissions to collect or transmit data
 ## License
 
 Distributed under the MIT License. See [LICENSE](./LICENSE) for more information.
-
-## Privacy Policy
-
-Read how Cloakr handles local storage, proxy settings, and browser permissions.
-
-- [Privacy Policy](./PRIVACY_POLICY.md)
