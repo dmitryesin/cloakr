@@ -97,6 +97,8 @@ body {
   color: var(--chrome-blue);
   display: flex;
   align-items: center;
+  border-radius: 50%;
+  box-shadow: 0 0 16px 4px rgba(26, 115, 232, 0.25);
 }
 
 .header-title {
