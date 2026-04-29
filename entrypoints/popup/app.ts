@@ -18,7 +18,6 @@ import {
   saveBtn,
   savedList,
   savedSection,
-  statusBadge,
   togglePassword,
   usernameInput,
 } from "./dom";
@@ -235,8 +234,6 @@ async function refreshStatus(): Promise<void> {
 function setConnectedUI(): void {
   isProxyConnected = true;
   hideError();
-  statusBadge.textContent = "ON";
-  statusBadge.className = "status-badge status-on";
   connectBtn.style.display = "none";
   disconnectBtn.style.display = "";
   retryStatusBtn.style.display = "none";
@@ -252,8 +249,6 @@ function setDisconnectedUI(): void {
   isProxyConnected = false;
   activeProxySnapshot = null;
   hideError();
-  statusBadge.textContent = "OFF";
-  statusBadge.className = "status-badge status-off";
   connectBtn.style.display = "";
   disconnectBtn.style.display = "none";
   retryStatusBtn.style.display = "none";
@@ -261,8 +256,6 @@ function setDisconnectedUI(): void {
 }
 
 function setStatusUnavailableUI(reason?: string): void {
-  statusBadge.textContent = "ERR";
-  statusBadge.className = "status-badge status-error";
   connectBtn.style.display = "none";
   disconnectBtn.style.display = "none";
   retryStatusBtn.style.display = "";

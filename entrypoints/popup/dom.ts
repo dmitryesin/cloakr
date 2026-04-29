@@ -15,7 +15,6 @@ export const connectBtn = document.getElementById("connectBtn") as HTMLButtonEle
 export const disconnectBtn = document.getElementById("disconnectBtn") as HTMLButtonElement;
 export const retryStatusBtn = document.getElementById("retryStatusBtn") as HTMLButtonElement;
 export const saveBtn = document.getElementById("saveBtn") as HTMLButtonElement;
-export const statusBadge = document.getElementById("statusBadge") as HTMLDivElement;
 export const errorMsg = document.getElementById("errorMsg") as HTMLDivElement;
 export const authSection = document.getElementById("authSection") as HTMLDivElement;
 export const togglePassword = document.getElementById("togglePassword") as HTMLButtonElement;

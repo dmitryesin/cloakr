@@ -106,33 +106,6 @@ body {
   flex: 1;
 }
 
-.status-badge {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 999px;
-  letter-spacing: 0.45px;
-  border: 1px solid transparent;
-}
-
-.status-badge.status-off {
-  background: var(--chrome-danger-soft);
-  color: var(--chrome-danger);
-  border-color: rgba(217, 48, 37, 0.18);
-}
-
-.status-badge.status-error {
-  background: var(--chrome-danger-soft-strong);
-  color: var(--chrome-danger);
-  border-color: rgba(217, 48, 37, 0.22);
-}
-
-.status-badge.status-on {
-  background: var(--chrome-success-soft);
-  color: var(--chrome-success);
-  border-color: rgba(24, 128, 56, 0.2);
-}
-
 .form {
   padding: 12px 14px;
   display: flex;
